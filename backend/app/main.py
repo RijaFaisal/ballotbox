@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routes import auth, draws, entries
+from app.routes import auth, draws, entries, results
 
 app = FastAPI(title="BallotBox API")
 
@@ -17,6 +17,7 @@ app.add_middleware(
 app.include_router(entries.router)
 app.include_router(auth.router)
 app.include_router(draws.router)
+app.include_router(results.router)
 
 
 @app.get("/health")

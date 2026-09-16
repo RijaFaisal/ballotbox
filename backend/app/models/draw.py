@@ -27,7 +27,16 @@ class Draw(Base):
     drawn_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     winner_count: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[DrawStatus] = mapped_column(
-        SAEnum(DrawStatus, name="draw_status", native_enum=False, length=20),
+        SAEnum(
+            DrawStatus,
+            name="draw_status",
+            native_enum=False,
+            length=20,
+            # Without this, SQLAlchemy persists each member's NAME
+            # ("PENDING") instead of its value ("pending"), which the
+            # database's lowercase ck_draws_status CHECK constraint rejects.
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         nullable=False,
         default=DrawStatus.PENDING,
     )

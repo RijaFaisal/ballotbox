@@ -74,3 +74,120 @@ button:disabled {
   background: #9fc4ea;
   cursor: not-allowed;
 }
+
+.nav-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: #0071e3;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+.results-date {
+  color: #6e6e73;
+  font-size: 14px;
+  margin-top: -8px;
+}
+
+.winners-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.winners-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.winners-list li:last-child {
+  border-bottom: none;
+}
+
+.winner-position {
+  font-weight: 600;
+  color: #0071e3;
+}
+
+.admin-card {
+  max-width: 720px;
+  text-align: left;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-header h1 {
+  margin: 0;
+}
+
+.secondary-button {
+  width: auto;
+  background: #e5e5ea;
+  color: #1c1c1e;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.admin-section {
+  margin-top: 28px;
+}
+
+.admin-section h2 {
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+
+.entries-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.run-draw-form {
+  max-width: 260px;
+}
+
+.run-draw-form button {
+  margin-top: 4px;
+}
+
+.last-draw-result {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f5f5f7;
+  border-radius: 8px;
+}
+
+.last-draw-result h3 {
+  margin-top: 0;
+  font-size: 15px;
+}
+
+.draws-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.draws-table th,
+.draws-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.seed-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  word-break: break-all;
+  max-width: 200px;
+}

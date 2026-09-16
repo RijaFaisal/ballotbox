@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { submitEntry } from "../api/client.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -61,6 +62,9 @@ export default function EntryForm() {
           <button type="button" onClick={() => setStatus("idle")}>
             Submit another entry
           </button>
+          <Link className="nav-link" to="/results">
+            View results
+          </Link>
         </div>
       </div>
     );
@@ -93,6 +97,9 @@ export default function EntryForm() {
             {status === "submitting" ? "Submitting..." : "Submit entry"}
           </button>
         </form>
+        <Link className="nav-link" to="/results">
+          View results
+        </Link>
       </div>
     </div>
   );

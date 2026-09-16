@@ -36,3 +36,22 @@ def test_invalid_identifier_rejected(client):
 def test_blank_name_rejected(client):
     response = client.post("/entries", json={"name": "   ", "identifier": "zara@example.com"})
     assert response.status_code == 422
+
+
+def test_list_entries_requires_admin(client):
+    response = client.get("/entries")
+    assert response.status_code == 401
+
+
+def test_list_entries_returns_names_without_identifiers(client, auth_headers):
+    client.post("/entries", json={"name": "Alice", "identifier": "alice@example.com"})
+    client.post("/entries", json={"name": "Bilal", "identifier": "12345-1234567-1"})
+
+    response = client.get("/entries", headers=auth_headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 2
+    assert {entry["name"] for entry in body} == {"Alice", "Bilal"}
+    for entry in body:
+        assert set(entry.keys()) == {"id", "name", "created_at"}

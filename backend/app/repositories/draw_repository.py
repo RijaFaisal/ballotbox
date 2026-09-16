@@ -25,6 +25,15 @@ def list_all(db: Session) -> list[Draw]:
     return list(db.execute(select(Draw).order_by(Draw.id.desc())).scalars().all())
 
 
+def get_latest_completed(db: Session) -> Draw | None:
+    return db.execute(
+        select(Draw)
+        .where(Draw.status == DrawStatus.COMPLETED)
+        .order_by(Draw.drawn_at.desc(), Draw.id.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+
 def list_winners_for_draw(db: Session, draw_id: int) -> list[Winner]:
     return list(
         db.execute(
