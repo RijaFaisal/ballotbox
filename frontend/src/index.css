@@ -593,7 +593,7 @@ button:disabled {
 }
 
 .results-date {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   color: var(--color-ink-muted);
   font-size: var(--font-size-sm);
   margin-top: calc(-1 * var(--space-2));
