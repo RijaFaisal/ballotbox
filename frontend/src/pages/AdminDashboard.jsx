@@ -3,9 +3,12 @@ import SiteHeader from "../components/SiteHeader.jsx";
 import {
   UnauthorizedError,
   clearToken,
+  createDraw,
   createProduct,
+  downloadDrawPdf,
   getBallotStatus,
   listCandidatesForProduct,
+  listDrawsForProduct,
   listProducts,
   resetBallot,
   toggleBallotStatus,
@@ -22,6 +25,12 @@ function formatDateTime(isoString) {
 
 function pluralize(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function statusBadgeClass(drawStatus) {
+  if (drawStatus === "completed") return "badge badge--success";
+  if (drawStatus === "failed") return "badge badge--danger";
+  return "badge badge--neutral";
 }
 
 export default function AdminDashboard() {
@@ -43,6 +52,9 @@ export default function AdminDashboard() {
 
   const [expandedProductIds, setExpandedProductIds] = useState(() => new Set());
   const [candidatesByProduct, setCandidatesByProduct] = useState({});
+  const [drawsByProduct, setDrawsByProduct] = useState({});
+  const [runDrawState, setRunDrawState] = useState({});
+  const [exportErrorByDraw, setExportErrorByDraw] = useState({});
 
   function loadDashboardData() {
     return Promise.all([listProducts(), getBallotStatus()]).then(
@@ -102,7 +114,40 @@ export default function AdminDashboard() {
       });
   }
 
-  function toggleProductCandidates(productId) {
+  function loadCandidates(productId) {
+    setCandidatesByProduct((prev) => ({ ...prev, [productId]: { status: "loading" } }));
+    listCandidatesForProduct(productId)
+      .then((candidates) => {
+        setCandidatesByProduct((prev) => ({
+          ...prev,
+          [productId]: { status: "loaded", candidates },
+        }));
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setCandidatesByProduct((prev) => ({
+          ...prev,
+          [productId]: { status: "error", error: err.message },
+        }));
+      });
+  }
+
+  function loadDraws(productId) {
+    setDrawsByProduct((prev) => ({ ...prev, [productId]: { status: "loading" } }));
+    listDrawsForProduct(productId)
+      .then((draws) => {
+        setDrawsByProduct((prev) => ({ ...prev, [productId]: { status: "loaded", draws } }));
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setDrawsByProduct((prev) => ({
+          ...prev,
+          [productId]: { status: "error", error: err.message },
+        }));
+      });
+  }
+
+  function toggleProductRow(productId) {
     setExpandedProductIds((prev) => {
       const next = new Set(prev);
       if (next.has(productId)) {
@@ -112,23 +157,34 @@ export default function AdminDashboard() {
       }
       return next;
     });
-    if (!candidatesByProduct[productId]) {
-      setCandidatesByProduct((prev) => ({ ...prev, [productId]: { status: "loading" } }));
-      listCandidatesForProduct(productId)
-        .then((candidates) => {
-          setCandidatesByProduct((prev) => ({
-            ...prev,
-            [productId]: { status: "loaded", candidates },
-          }));
-        })
-        .catch((err) => {
-          if (err instanceof UnauthorizedError) return;
-          setCandidatesByProduct((prev) => ({
-            ...prev,
-            [productId]: { status: "error", error: err.message },
-          }));
-        });
-    }
+    if (!candidatesByProduct[productId]) loadCandidates(productId);
+    if (!drawsByProduct[productId]) loadDraws(productId);
+  }
+
+  function handleRunDraw(productId) {
+    setRunDrawState((prev) => ({ ...prev, [productId]: { status: "submitting" } }));
+
+    createDraw(productId)
+      .then(() => {
+        setRunDrawState((prev) => ({ ...prev, [productId]: { status: "idle" } }));
+        loadDraws(productId);
+        loadCandidates(productId);
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setRunDrawState((prev) => ({
+          ...prev,
+          [productId]: { status: "idle", error: err.message },
+        }));
+      });
+  }
+
+  function handleDownloadPdf(productId, drawId) {
+    setExportErrorByDraw((prev) => ({ ...prev, [drawId]: "" }));
+    downloadDrawPdf(productId, drawId).catch((err) => {
+      if (err instanceof UnauthorizedError) return;
+      setExportErrorByDraw((prev) => ({ ...prev, [drawId]: err.message }));
+    });
   }
 
   function handleReset(event) {
@@ -149,6 +205,8 @@ export default function AdminDashboard() {
         setResetStatus("idle");
         setExpandedProductIds(new Set());
         setCandidatesByProduct({});
+        setDrawsByProduct({});
+        setRunDrawState({});
         return loadDashboardData();
       })
       .catch((err) => {
@@ -277,6 +335,13 @@ export default function AdminDashboard() {
                       {products.map((product) => {
                         const isExpanded = expandedProductIds.has(product.id);
                         const candidateState = candidatesByProduct[product.id];
+                        const drawState = drawsByProduct[product.id];
+                        const runState = runDrawState[product.id] ?? { status: "idle" };
+                        const candidateCount =
+                          candidateState?.status === "loaded"
+                            ? candidateState.candidates.length
+                            : null;
+
                         return (
                           <Fragment key={product.id}>
                             <tr>
@@ -287,15 +352,21 @@ export default function AdminDashboard() {
                                   type="button"
                                   className="secondary-button small-button"
                                   aria-expanded={isExpanded}
-                                  onClick={() => toggleProductCandidates(product.id)}
+                                  onClick={() => toggleProductRow(product.id)}
                                 >
-                                  {isExpanded ? "Hide candidates" : "View candidates"}
+                                  {isExpanded ? "Hide" : "Manage"}
                                 </button>
                               </td>
                             </tr>
                             {isExpanded && (
                               <tr>
                                 <td colSpan={3} className="data-table-expanded">
+                                  <h3>
+                                    Candidates
+                                    {candidateCount !== null && (
+                                      <span className="mono"> ({candidateCount})</span>
+                                    )}
+                                  </h3>
                                   {(!candidateState || candidateState.status === "loading") && (
                                     <p className="loading-text">
                                       <span className="spinner" aria-hidden="true" />
@@ -326,6 +397,89 @@ export default function AdminDashboard() {
                                                 <td>{candidate.email ?? "—"}</td>
                                                 <td>{candidate.cnic ?? "—"}</td>
                                                 <td>{formatDateTime(candidate.created_at)}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    ))}
+
+                                  <h3>Draw</h3>
+                                  <button
+                                    type="button"
+                                    className="primary-button small-button"
+                                    onClick={() => handleRunDraw(product.id)}
+                                    disabled={runState.status === "submitting"}
+                                  >
+                                    {runState.status === "submitting"
+                                      ? "Running draw…"
+                                      : "Run draw"}
+                                  </button>
+                                  {runState.error && <p className="error-text">{runState.error}</p>}
+
+                                  {(!drawState || drawState.status === "loading") && (
+                                    <p className="loading-text">
+                                      <span className="spinner" aria-hidden="true" />
+                                      Loading draws…
+                                    </p>
+                                  )}
+                                  {drawState?.status === "error" && (
+                                    <p className="error-text">{drawState.error}</p>
+                                  )}
+                                  {drawState?.status === "loaded" &&
+                                    (drawState.draws.length === 0 ? (
+                                      <p className="empty-state">No draws yet.</p>
+                                    ) : (
+                                      <div className="table-scroll">
+                                        <table className="data-table">
+                                          <thead>
+                                            <tr>
+                                              <th>ID</th>
+                                              <th>Status</th>
+                                              <th>Winner</th>
+                                              <th>Drawn at</th>
+                                              <th>Seed</th>
+                                              <th>Actions</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {drawState.draws.map((draw) => (
+                                              <tr key={draw.id}>
+                                                <td>{draw.id}</td>
+                                                <td>
+                                                  <span className={statusBadgeClass(draw.status)}>
+                                                    {draw.status}
+                                                  </span>
+                                                </td>
+                                                <td>{draw.winners[0]?.candidate.name ?? "—"}</td>
+                                                <td>
+                                                  {draw.drawn_at
+                                                    ? formatDateTime(draw.drawn_at)
+                                                    : "—"}
+                                                </td>
+                                                <td className="seed-cell">{draw.seed}</td>
+                                                <td>
+                                                  {draw.status === "completed" ? (
+                                                    <div className="table-actions">
+                                                      <button
+                                                        type="button"
+                                                        className="secondary-button small-button"
+                                                        onClick={() =>
+                                                          handleDownloadPdf(product.id, draw.id)
+                                                        }
+                                                      >
+                                                        PDF
+                                                      </button>
+                                                    </div>
+                                                  ) : (
+                                                    "—"
+                                                  )}
+                                                  {exportErrorByDraw[draw.id] && (
+                                                    <p className="error-text">
+                                                      {exportErrorByDraw[draw.id]}
+                                                    </p>
+                                                  )}
+                                                </td>
                                               </tr>
                                             ))}
                                           </tbody>

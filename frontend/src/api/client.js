@@ -76,6 +76,47 @@ export function listCandidatesForProduct(productId) {
   return adminRequest(`/products/${productId}/candidates`);
 }
 
+export function getPublicProducts() {
+  return request("/products/public");
+}
+export function submitCandidate(payload) {
+  return request("/candidates", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function createDraw(productId) {
+  return adminRequest(`/products/${productId}/draws`, { method: "POST" });
+}
+export function listDrawsForProduct(productId) {
+  return adminRequest(`/products/${productId}/draws`);
+}
+
+export async function downloadDrawPdf(productId, drawId) {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/draws/${drawId}/export`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      window.location.assign("/admin/login");
+      throw new UnauthorizedError("Session expired.");
+    }
+    throw new Error("Could not download the PDF.");
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `draw-${drawId}.pdf`;
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export function resetBallot(confirm) {
   return adminRequest("/admin/reset", { method: "POST", body: JSON.stringify({ confirm }) });
 }

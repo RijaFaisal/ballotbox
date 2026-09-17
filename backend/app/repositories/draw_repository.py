@@ -27,6 +27,14 @@ def list_all(db: Session) -> list[Draw]:
     return list(db.execute(select(Draw).order_by(Draw.id.desc())).scalars().all())
 
 
+def list_by_product(db: Session, product_id: int) -> list[Draw]:
+    return list(
+        db.execute(
+            select(Draw).where(Draw.product_id == product_id).order_by(Draw.id.desc())
+        ).scalars().all()
+    )
+
+
 def get_latest_completed(db: Session) -> Draw | None:
     return db.execute(
         select(Draw)

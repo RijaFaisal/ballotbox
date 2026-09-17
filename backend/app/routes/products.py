@@ -6,22 +6,22 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_admin
 from app.database import get_db
-from app.models.product import Product
 from app.repositories import candidate_repository, product_repository
+from app.routes.common import get_product_or_404
 from app.schemas.candidate import CandidateRead
-from app.schemas.product import ProductCreate, ProductRead
+from app.schemas.product import ProductCreate, ProductOption, ProductRead
 
 # No router-level auth dependency: product creation and the candidate list
-# are admin-only, but a future public "list products for the entry form
-# dropdown" route belongs on this same router without exposing candidates.
+# are admin-only, but /products/public (the entry form's dropdown) is not.
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-def _get_product_or_404(db: Session, product_id: int) -> Product:
-    product = product_repository.get_by_id(db, product_id)
-    if product is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
-    return product
+@router.get("/public", response_model=list[ProductOption])
+def list_products_public(db: Session = Depends(get_db)) -> list[ProductOption]:
+    return [
+        ProductOption.model_validate(product)
+        for product in product_repository.list_all_ordered_by_name(db)
+    ]
 
 
 @router.post(
@@ -63,7 +63,7 @@ def list_products(db: Session = Depends(get_db)) -> list[ProductRead]:
 def list_candidates_for_product(
     product_id: int, db: Session = Depends(get_db)
 ) -> list[CandidateRead]:
-    _get_product_or_404(db, product_id)
+    get_product_or_404(db, product_id)
     return [
         CandidateRead.model_validate(candidate)
         for candidate in candidate_repository.list_by_product_ordered_by_id(db, product_id)

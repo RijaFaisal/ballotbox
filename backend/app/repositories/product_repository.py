@@ -30,3 +30,9 @@ def list_all_ordered_by_created_at(db: Session) -> list[Product]:
             select(Product).order_by(Product.created_at.desc(), Product.id.desc())
         ).scalars().all()
     )
+
+
+def list_all_ordered_by_name(db: Session) -> list[Product]:
+    """Alphabetical -- friendlier than creation order for a customer-facing
+    dropdown, where "newest first" has no obvious value."""
+    return list(db.execute(select(Product).order_by(func.lower(Product.name))).scalars().all())

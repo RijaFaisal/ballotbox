@@ -23,3 +23,13 @@ class ProductRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductOption(BaseModel):
+    """Public, minimal shape for the customer-facing product dropdown --
+    deliberately excludes created_at and anything candidate-related."""
+
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)

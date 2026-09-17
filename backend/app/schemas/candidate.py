@@ -45,6 +45,15 @@ class CandidateCreate(BaseModel):
         return self
 
 
+class CandidateSubmitResult(BaseModel):
+    """Public confirmation shown after a successful submission -- name and
+    the product entered, nothing else (never other candidates, never
+    anything that could be mistaken for a result)."""
+
+    name: str
+    product_name: str
+
+
 class CandidateRead(BaseModel):
     """Admin-only view -- includes contact details. Never sent to
     customers, who must never see other candidates."""
