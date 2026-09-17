@@ -121,7 +121,7 @@ export default function EntryForm() {
         <main className="site-main">
           <div className="panel panel--raised">
             <h1>You're in.</h1>
-            <p>Thanks — your entry has been recorded.</p>
+            <p>Thanks! your entry has been recorded.</p>
             {entryCount !== null && (
               <p className="stat-chip">
                 <strong>{entryCount}</strong>{" "}
