@@ -20,11 +20,12 @@ from app.models.draw import Draw, DrawStatus
 
 
 def _draws_table_matching_migration(metadata: MetaData) -> Table:
-    # Mirrors alembic/versions/0001_initial.py's draws table exactly.
+    # Mirrors alembic/versions/0003_products_candidates.py's draws table.
     return Table(
         "draws",
         metadata,
         Column("id", Integer, primary_key=True),
+        Column("product_id", Integer, nullable=False),
         Column("seed", String(length=128), nullable=False),
         Column("drawn_at", DateTime(timezone=True), nullable=True),
         Column("winner_count", Integer, nullable=False),
@@ -41,7 +42,7 @@ def test_draw_status_values_satisfy_the_database_check_constraint():
 
     with Session(engine) as session:
         for status in DrawStatus:
-            draw = Draw(seed="test-seed", winner_count=1, status=status)
+            draw = Draw(product_id=1, seed="test-seed", winner_count=1, status=status)
             session.add(draw)
             session.commit()  # raises IntegrityError if the written value isn't lowercase
             session.expunge(draw)

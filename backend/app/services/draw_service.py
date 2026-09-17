@@ -7,10 +7,10 @@ from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
+from app.models.candidate import Candidate
 from app.models.draw import Draw, DrawStatus
-from app.models.entry import Entry
 from app.models.winner import Winner
-from app.repositories import draw_repository, entry_repository
+from app.repositories import candidate_repository, draw_repository
 
 
 class DrawAlreadyCompletedError(Exception):
@@ -18,7 +18,7 @@ class DrawAlreadyCompletedError(Exception):
 
 
 class NotEnoughEntriesError(Exception):
-    """Raised when winner_count exceeds the number of eligible entries."""
+    """Raised when winner_count exceeds the number of eligible candidates."""
 
 
 def _generate_seed() -> str:
@@ -27,24 +27,26 @@ def _generate_seed() -> str:
     return secrets.token_hex(32)
 
 
-def select_winners(entries: Sequence[Entry], seed: str, winner_count: int) -> list[Entry]:
+def select_winners(candidates: Sequence[Candidate], seed: str, winner_count: int) -> list[Candidate]:
     """Pure, deterministic selection.
 
     The ONLY randomness source is random.Random(seed). Given the same seed,
-    the same entries (in the same order), and the same winner_count, this
+    the same candidates (in the same order), and the same winner_count, this
     always returns the same winners in the same order — that determinism is
     the entire reproducibility guarantee of a draw.
     """
-    return random.Random(seed).sample(list(entries), winner_count)
+    return random.Random(seed).sample(list(candidates), winner_count)
 
 
-def create_pending_draw(db: Session, winner_count: int) -> Draw:
+def create_pending_draw(db: Session, product_id: int, winner_count: int) -> Draw:
     """Step 1 of a draw: persist the seed and a pending row before any
     selection happens. This row is the audit anchor — it exists in the
     database whether or not the selection that follows succeeds.
     """
     seed = _generate_seed()
-    return draw_repository.create_pending(db, seed=seed, winner_count=winner_count)
+    return draw_repository.create_pending(
+        db, product_id=product_id, seed=seed, winner_count=winner_count
+    )
 
 
 def execute_draw(db: Session, draw: Draw) -> Draw:
@@ -61,18 +63,18 @@ def execute_draw(db: Session, draw: Draw) -> Draw:
         )
 
     try:
-        entries = entry_repository.list_all_ordered_by_id(db)
+        candidates = candidate_repository.list_by_product_ordered_by_id(db, draw.product_id)
 
-        if draw.winner_count > len(entries):
+        if draw.winner_count > len(candidates):
             raise NotEnoughEntriesError(
-                f"Requested {draw.winner_count} winners but only {len(entries)} "
-                "eligible entries exist."
+                f"Requested {draw.winner_count} winners but only {len(candidates)} "
+                "eligible candidates exist for this product."
             )
 
-        selected = select_winners(entries, draw.seed, draw.winner_count)
+        selected = select_winners(candidates, draw.seed, draw.winner_count)
         winners = [
-            Winner(draw_id=draw.id, entry_id=entry.id, position=position)
-            for position, entry in enumerate(selected, start=1)
+            Winner(draw_id=draw.id, candidate_id=candidate.id, position=position)
+            for position, candidate in enumerate(selected, start=1)
         ]
 
         return draw_repository.complete(
@@ -83,10 +85,10 @@ def execute_draw(db: Session, draw: Draw) -> Draw:
         raise
 
 
-def run_draw(db: Session, winner_count: int) -> Draw:
+def run_draw(db: Session, product_id: int, winner_count: int) -> Draw:
     """Full flow used by the route: create the pending/seeded draw, then
     execute it. Every call produces a brand-new draw row — there is no path
     by which this re-runs an existing draw.
     """
-    draw = create_pending_draw(db, winner_count)
+    draw = create_pending_draw(db, product_id, winner_count)
     return execute_draw(db, draw)

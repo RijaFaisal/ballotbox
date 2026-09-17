@@ -107,7 +107,7 @@ body {
 h1,
 h2,
 h3 {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-weight: 700;
   line-height: 1.1;
   margin: 0 0 var(--space-3);
@@ -155,7 +155,7 @@ a {
 }
 
 /* Admin dashboard only: a lighter outer page background. The header,
-   status strip, panels, and Past draws section all pin their own
+   status strip, panels, and tinted sections all pin their own
    background below so they stay visually unchanged against it. */
 .admin-dashboard-shell {
   background: var(--color-paper-admin);
@@ -299,7 +299,7 @@ a {
 .field label {
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -641,6 +641,15 @@ button:disabled {
 
 .admin-header h1 {
   margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.admin-dashboard-shell .section h2 {
+  font-size: 1.125rem;
 }
 
 .entries-list {
@@ -673,7 +682,7 @@ button:disabled {
   margin-top: var(--space-2);
 }
 
-.past-draws-section {
+.tinted-section {
   background: var(--color-paper-admin);
 }
 
@@ -682,14 +691,14 @@ button:disabled {
   border: var(--border-thick) solid var(--color-border);
 }
 
-.draws-table {
+.data-table {
   width: 100%;
   min-width: 40rem;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
 
-.draws-table th {
+.data-table th {
   text-align: left;
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
@@ -699,7 +708,7 @@ button:disabled {
   border-bottom: var(--border-thick) solid var(--color-border);
 }
 
-.draws-table td {
+.data-table td {
   text-align: left;
   padding: var(--space-3);
   border-bottom: var(--border-thin) solid var(--color-border-subtle);
@@ -707,7 +716,7 @@ button:disabled {
   font-family: var(--font-mono);
 }
 
-.draws-table td:first-child {
+.data-table td:first-child {
   font-weight: 700;
 }
 
@@ -723,13 +732,13 @@ button:disabled {
   gap: var(--space-2);
 }
 
-.draws-table-expanded {
+.data-table-expanded {
   background: var(--color-paper-admin);
   border-bottom: var(--border-thin) solid var(--color-border-subtle);
   font-family: var(--font-body);
 }
 
-.draws-table-expanded .winners-list {
+.data-table-expanded .winners-list {
   margin: 0;
 }
 

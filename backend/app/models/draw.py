@@ -4,12 +4,13 @@ import datetime as dt
 import enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SAEnum, Integer, String
+from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
 if TYPE_CHECKING:
+    from app.models.product import Product
     from app.models.winner import Winner
 
 
@@ -23,6 +24,9 @@ class Draw(Base):
     __tablename__ = "draws"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     seed: Mapped[str] = mapped_column(String(128), nullable=False)
     drawn_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     winner_count: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -41,6 +45,7 @@ class Draw(Base):
         default=DrawStatus.PENDING,
     )
 
+    product: Mapped["Product"] = relationship(back_populates="draws")
     winners: Mapped[list["Winner"]] = relationship(
         back_populates="draw", order_by="Winner.position"
     )

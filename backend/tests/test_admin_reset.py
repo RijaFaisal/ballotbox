@@ -1,12 +1,18 @@
-from app.repositories import draw_repository, entry_repository
+from app.repositories import candidate_repository, product_repository
 from app.services.draw_service import run_draw
 
 
-def _seed_entries(db_session, count: int) -> None:
+def _seed_product_with_candidates(db_session, count: int):
+    product = product_repository.create(db_session, name="Grand Prize")
     for i in range(1, count + 1):
-        entry_repository.create(
-            db_session, name=f"Person {i}", identifier=f"person{i}@example.com"
+        candidate_repository.create(
+            db_session,
+            product_id=product.id,
+            name=f"Person {i}",
+            email=f"person{i}@example.com",
+            cnic=None,
         )
+    return product
 
 
 def test_reset_requires_admin(client):
@@ -15,43 +21,47 @@ def test_reset_requires_admin(client):
 
 
 def test_reset_rejects_wrong_confirmation_phrase(client, db_session, auth_headers):
-    _seed_entries(db_session, 3)
+    product = _seed_product_with_candidates(db_session, 3)
 
     response = client.post("/admin/reset", json={"confirm": "yes"}, headers=auth_headers)
 
     assert response.status_code == 400
     # nothing was deleted
-    assert len(entry_repository.list_all_ordered_by_id(db_session)) == 3
+    assert len(candidate_repository.list_by_product_ordered_by_id(db_session, product.id)) == 3
 
 
-def test_reset_clears_entries_draws_and_winners(client, db_session, auth_headers):
-    _seed_entries(db_session, 5)
-    draw = run_draw(db_session, winner_count=2)
-    assert len(draw_repository.list_winners_for_draw(db_session, draw.id)) == 2
+def test_reset_clears_products_candidates_draws_and_winners(client, db_session, auth_headers):
+    product = _seed_product_with_candidates(db_session, 5)
+    draw = run_draw(db_session, product_id=product.id, winner_count=1)
+    assert len(candidate_repository.list_by_product_ordered_by_id(db_session, product.id)) == 5
 
     response = client.post("/admin/reset", json={"confirm": "RESET"}, headers=auth_headers)
 
     assert response.status_code == 200
     body = response.json()
-    assert body == {"entries_deleted": 5, "draws_deleted": 1, "winners_deleted": 2}
+    assert body == {
+        "products_deleted": 1,
+        "candidates_deleted": 5,
+        "draws_deleted": 1,
+        "winners_deleted": 1,
+    }
 
-    assert entry_repository.list_all_ordered_by_id(db_session) == []
-    assert draw_repository.list_all(db_session) == []
-    assert draw_repository.list_winners_for_draw(db_session, draw.id) == []
+    assert product_repository.list_all_ordered_by_created_at(db_session) == []
+    assert candidate_repository.list_by_product_ordered_by_id(db_session, product.id) == []
 
 
-def test_dashboard_shows_zero_entries_after_reset(client, db_session, auth_headers):
-    _seed_entries(db_session, 4)
+def test_dashboard_shows_zero_products_after_reset(client, db_session, auth_headers):
+    _seed_product_with_candidates(db_session, 4)
 
     client.post("/admin/reset", json={"confirm": "RESET"}, headers=auth_headers)
-    response = client.get("/entries", headers=auth_headers)
+    response = client.get("/products", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == []
 
 
 def test_reset_does_not_touch_admin_accounts(client, db_session, auth_headers):
-    _seed_entries(db_session, 2)
+    _seed_product_with_candidates(db_session, 2)
 
     response = client.post("/admin/reset", json={"confirm": "RESET"}, headers=auth_headers)
     assert response.status_code == 200

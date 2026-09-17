@@ -1,15 +1,12 @@
 import { Fragment, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader.jsx";
 import {
   UnauthorizedError,
   clearToken,
-  createDraw,
-  downloadDrawPdf,
+  createProduct,
   getBallotStatus,
-  getDraw,
-  listDraws,
-  listEntries,
+  listCandidatesForProduct,
+  listProducts,
   resetBallot,
   toggleBallotStatus,
 } from "../api/client.js";
@@ -27,45 +24,30 @@ function pluralize(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function statusBadgeClass(drawStatus) {
-  if (drawStatus === "completed") return "badge badge--success";
-  if (drawStatus === "failed") return "badge badge--danger";
-  return "badge badge--neutral";
-}
-
 export default function AdminDashboard() {
-  const [entries, setEntries] = useState(null);
-  const [draws, setDraws] = useState(null);
+  const [products, setProducts] = useState(null);
   const [ballotStatus, setBallotStatus] = useState(null);
   const [loadError, setLoadError] = useState("");
 
-  const [winnerCount, setWinnerCount] = useState("");
-  const [runDrawStatus, setRunDrawStatus] = useState("idle");
-  const [runDrawError, setRunDrawError] = useState("");
-  const [lastDraw, setLastDraw] = useState(null);
+  const [newProductName, setNewProductName] = useState("");
+  const [createStatus, setCreateStatus] = useState("idle");
+  const [createError, setCreateError] = useState("");
+
+  const [toggleStatus, setToggleStatus] = useState("idle");
+  const [toggleError, setToggleError] = useState("");
 
   const [resetInput, setResetInput] = useState("");
   const [resetStatus, setResetStatus] = useState("idle");
   const [resetError, setResetError] = useState("");
   const [resetSummary, setResetSummary] = useState(null);
 
-  const [toggleStatus, setToggleStatus] = useState("idle");
-  const [toggleError, setToggleError] = useState("");
-
-  const [exportError, setExportError] = useState("");
-
-  const [expandedDrawIds, setExpandedDrawIds] = useState(() => new Set());
-  const [drawDetails, setDrawDetails] = useState({});
+  const [expandedProductIds, setExpandedProductIds] = useState(() => new Set());
+  const [candidatesByProduct, setCandidatesByProduct] = useState({});
 
   function loadDashboardData() {
-    return Promise.all([listEntries(), listDraws(), getBallotStatus()]).then(
-      ([entriesData, drawsData, statusData]) => {
-        setEntries(entriesData);
-        setDraws(drawsData);
+    return Promise.all([listProducts(), getBallotStatus()]).then(
+      ([productsData, statusData]) => {
+        setProducts(productsData);
         setBallotStatus(statusData);
       }
     );
@@ -78,55 +60,29 @@ export default function AdminDashboard() {
     });
   }, []);
 
-  function handleRunDraw(event) {
+  function handleCreateProduct(event) {
     event.preventDefault();
-    const count = Number(winnerCount);
-    if (!Number.isInteger(count) || count <= 0) {
-      setRunDrawError("Enter a whole number greater than 0.");
+    const name = newProductName.trim();
+    if (!name) {
+      setCreateError("Enter a product name.");
       return;
     }
 
-    setRunDrawStatus("submitting");
-    setRunDrawError("");
-    setLastDraw(null);
+    setCreateStatus("submitting");
+    setCreateError("");
 
-    createDraw(count)
-      .then((draw) => {
-        setLastDraw(draw);
-        setWinnerCount("");
-        setRunDrawStatus("idle");
-        return listDraws().then(setDraws);
+    createProduct(name)
+      .then((product) => {
+        setProducts((prev) => [product, ...(prev ?? [])]);
+        setNewProductName("");
+        setCreateStatus("idle");
       })
       .catch((err) => {
         if (err instanceof UnauthorizedError) return;
-        setRunDrawStatus("idle");
-        setRunDrawError(err.message);
-      });
-  }
-
-  function handleReset(event) {
-    event.preventDefault();
-    if (resetInput !== RESET_CONFIRM_PHRASE) {
-      setResetError(`Type ${RESET_CONFIRM_PHRASE} exactly to confirm.`);
-      return;
-    }
-
-    setResetStatus("submitting");
-    setResetError("");
-    setResetSummary(null);
-
-    resetBallot(resetInput)
-      .then((result) => {
-        setResetSummary(result);
-        setResetInput("");
-        setResetStatus("idle");
-        setLastDraw(null);
-        return loadDashboardData();
-      })
-      .catch((err) => {
-        if (err instanceof UnauthorizedError) return;
-        setResetStatus("idle");
-        setResetError(err.message);
+        setCreateStatus("idle");
+        setCreateError(
+          err.status === 409 ? "A product with this name already exists." : err.message
+        );
       });
   }
 
@@ -146,38 +102,60 @@ export default function AdminDashboard() {
       });
   }
 
-  function toggleDrawWinners(drawId) {
-    setExpandedDrawIds((prev) => {
+  function toggleProductCandidates(productId) {
+    setExpandedProductIds((prev) => {
       const next = new Set(prev);
-      if (next.has(drawId)) {
-        next.delete(drawId);
+      if (next.has(productId)) {
+        next.delete(productId);
       } else {
-        next.add(drawId);
+        next.add(productId);
       }
       return next;
     });
-    if (!drawDetails[drawId]) {
-      setDrawDetails((prev) => ({ ...prev, [drawId]: { status: "loading" } }));
-      getDraw(drawId)
-        .then((detail) => {
-          setDrawDetails((prev) => ({ ...prev, [drawId]: { status: "loaded", detail } }));
+    if (!candidatesByProduct[productId]) {
+      setCandidatesByProduct((prev) => ({ ...prev, [productId]: { status: "loading" } }));
+      listCandidatesForProduct(productId)
+        .then((candidates) => {
+          setCandidatesByProduct((prev) => ({
+            ...prev,
+            [productId]: { status: "loaded", candidates },
+          }));
         })
         .catch((err) => {
           if (err instanceof UnauthorizedError) return;
-          setDrawDetails((prev) => ({
+          setCandidatesByProduct((prev) => ({
             ...prev,
-            [drawId]: { status: "error", error: err.message },
+            [productId]: { status: "error", error: err.message },
           }));
         });
     }
   }
 
-  function handleDownloadPdf(drawId) {
-    setExportError("");
-    downloadDrawPdf(drawId).catch((err) => {
-      if (err instanceof UnauthorizedError) return;
-      setExportError(err.message);
-    });
+  function handleReset(event) {
+    event.preventDefault();
+    if (resetInput !== RESET_CONFIRM_PHRASE) {
+      setResetError(`Type ${RESET_CONFIRM_PHRASE} exactly to confirm.`);
+      return;
+    }
+
+    setResetStatus("submitting");
+    setResetError("");
+    setResetSummary(null);
+
+    resetBallot(resetInput)
+      .then((result) => {
+        setResetSummary(result);
+        setResetInput("");
+        setResetStatus("idle");
+        setExpandedProductIds(new Set());
+        setCandidatesByProduct({});
+        return loadDashboardData();
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setResetStatus("idle");
+        setResetError(err.message);
+      });
   }
 
   function handleLogout() {
@@ -185,7 +163,7 @@ export default function AdminDashboard() {
     window.location.assign("/admin/login");
   }
 
-  const isLoading = entries === null || draws === null || ballotStatus === null;
+  const isLoading = products === null || ballotStatus === null;
 
   return (
     <div className="site-shell admin-dashboard-shell">
@@ -256,153 +234,104 @@ export default function AdminDashboard() {
               </div>
             </section>
 
-            <div className="section dashboard-grid">
-              <section className="panel">
-                <h2>
-                  Entries <span className="mono">({entries.length})</span>
-                </h2>
-                {entries.length === 0 ? (
-                  <p className="empty-state">No entries yet.</p>
-                ) : (
-                  <ul className="entries-list">
-                    {entries.map((entry) => (
-                      <li key={entry.id}>{entry.name}</li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+            <section className="panel">
+              <h2>New product</h2>
+              <form onSubmit={handleCreateProduct} className="run-draw-form">
+                <div className="field">
+                  <label htmlFor="productName">Product name</label>
+                  <input
+                    id="productName"
+                    value={newProductName}
+                    onChange={(e) => setNewProductName(e.target.value)}
+                    placeholder="e.g. Grand Prize"
+                  />
+                </div>
+                {createError && <p className="error-text">{createError}</p>}
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={createStatus === "submitting"}
+                >
+                  {createStatus === "submitting" ? "Creating…" : "Create product"}
+                </button>
+              </form>
+            </section>
 
-              <section className="panel">
-                <h2>Run a draw</h2>
-                <form onSubmit={handleRunDraw} className="run-draw-form">
-                  <div className="field">
-                    <label htmlFor="winnerCount">Number of winners</label>
-                    <input
-                      id="winnerCount"
-                      type="number"
-                      min="1"
-                      value={winnerCount}
-                      onChange={(e) => setWinnerCount(e.target.value)}
-                    />
-                  </div>
-                  {runDrawError && <p className="error-text">{runDrawError}</p>}
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={runDrawStatus === "submitting"}
-                  >
-                    {runDrawStatus === "submitting" ? "Running draw…" : "Run draw"}
-                  </button>
-                </form>
-
-                {lastDraw && (
-                  <div className="last-draw-result">
-                    <span className="eyebrow">Draw #{lastDraw.id}</span>
-                    <h3>Winners</h3>
-                    <ol className="winners-list">
-                      {lastDraw.winners.map((winner) => (
-                        <li key={winner.position} className="winner-row">
-                          <span className="winner-tile">{pad2(winner.position)}</span>
-                          <span className="winner-name">{winner.entry.name}</span>
-                        </li>
-                      ))}
-                    </ol>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => handleDownloadPdf(lastDraw.id)}
-                    >
-                      Download PDF
-                    </button>
-                  </div>
-                )}
-              </section>
-            </div>
-
-            <section className="section past-draws-section">
-              <h2>Past draws</h2>
-              {exportError && <p className="error-text">{exportError}</p>}
-              {draws.length === 0 ? (
-                <p className="empty-state">No draws yet.</p>
+            <section className="section tinted-section">
+              <h2>
+                Products <span className="mono">({products.length})</span>
+              </h2>
+              {products.length === 0 ? (
+                <p className="empty-state">No products yet. Create one above.</p>
               ) : (
                 <div className="table-scroll">
-                  <table className="draws-table">
+                  <table className="data-table">
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Status</th>
-                        <th>Winners</th>
-                        <th>Drawn at</th>
-                        <th>Seed</th>
+                        <th>Name</th>
+                        <th>Created</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {draws.map((draw) => {
-                        const isExpanded = expandedDrawIds.has(draw.id);
-                        const detailState = drawDetails[draw.id];
+                      {products.map((product) => {
+                        const isExpanded = expandedProductIds.has(product.id);
+                        const candidateState = candidatesByProduct[product.id];
                         return (
-                          <Fragment key={draw.id}>
+                          <Fragment key={product.id}>
                             <tr>
-                              <td>{draw.id}</td>
+                              <td>{product.name}</td>
+                              <td>{formatDateTime(product.created_at)}</td>
                               <td>
-                                <span className={statusBadgeClass(draw.status)}>
-                                  {draw.status}
-                                </span>
-                              </td>
-                              <td>{draw.winner_count}</td>
-                              <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
-                              <td className="seed-cell">{draw.seed}</td>
-                              <td>
-                                {draw.status === "completed" ? (
-                                  <div className="table-actions">
-                                    <button
-                                      type="button"
-                                      className="secondary-button small-button"
-                                      aria-expanded={isExpanded}
-                                      onClick={() => toggleDrawWinners(draw.id)}
-                                    >
-                                      {isExpanded ? "Hide" : "View"}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="secondary-button small-button"
-                                      onClick={() => handleDownloadPdf(draw.id)}
-                                    >
-                                      PDF
-                                    </button>
-                                  </div>
-                                ) : (
-                                  "—"
-                                )}
+                                <button
+                                  type="button"
+                                  className="secondary-button small-button"
+                                  aria-expanded={isExpanded}
+                                  onClick={() => toggleProductCandidates(product.id)}
+                                >
+                                  {isExpanded ? "Hide candidates" : "View candidates"}
+                                </button>
                               </td>
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={6} className="draws-table-expanded">
-                                  {(!detailState || detailState.status === "loading") && (
+                                <td colSpan={3} className="data-table-expanded">
+                                  {(!candidateState || candidateState.status === "loading") && (
                                     <p className="loading-text">
                                       <span className="spinner" aria-hidden="true" />
-                                      Loading winners…
+                                      Loading candidates…
                                     </p>
                                   )}
-                                  {detailState?.status === "error" && (
-                                    <p className="error-text">{detailState.error}</p>
+                                  {candidateState?.status === "error" && (
+                                    <p className="error-text">{candidateState.error}</p>
                                   )}
-                                  {detailState?.status === "loaded" && (
-                                    <ol className="winners-list">
-                                      {detailState.detail.winners.map((winner) => (
-                                        <li key={winner.position} className="winner-row">
-                                          <span className="winner-tile">
-                                            {pad2(winner.position)}
-                                          </span>
-                                          <span className="winner-name">
-                                            {winner.entry.name}
-                                          </span>
-                                        </li>
-                                      ))}
-                                    </ol>
-                                  )}
+                                  {candidateState?.status === "loaded" &&
+                                    (candidateState.candidates.length === 0 ? (
+                                      <p className="empty-state">No candidates yet.</p>
+                                    ) : (
+                                      <div className="table-scroll">
+                                        <table className="data-table">
+                                          <thead>
+                                            <tr>
+                                              <th>Name</th>
+                                              <th>Email</th>
+                                              <th>CNIC</th>
+                                              <th>Entered</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {candidateState.candidates.map((candidate) => (
+                                              <tr key={candidate.id}>
+                                                <td>{candidate.name}</td>
+                                                <td>{candidate.email ?? "—"}</td>
+                                                <td>{candidate.cnic ?? "—"}</td>
+                                                <td>{formatDateTime(candidate.created_at)}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    ))}
                                 </td>
                               </tr>
                             )}
@@ -418,11 +347,11 @@ export default function AdminDashboard() {
             <section className="section danger-zone">
               <h2>Reset ballot</h2>
               <p className="danger-warning">
-                This permanently deletes every entry, draw, and winner so a new
-                event can start from zero. It does not affect admin accounts.
-                Only do this between events, after any results you need have
-                already been recorded elsewhere, it is not a way to undo or
-                hide a completed draw.
+                This permanently deletes every product, candidate, draw, and
+                winner so a new set of events can start from zero. It does
+                not affect admin accounts. Only do this between events, after
+                any results you need have already been recorded elsewhere --
+                it is not a way to undo or hide a completed draw.
               </p>
               <form onSubmit={handleReset} className="reset-form">
                 <div className="field">
@@ -439,7 +368,8 @@ export default function AdminDashboard() {
                 {resetError && <p className="error-text">{resetError}</p>}
                 {resetSummary && (
                   <p className="reset-summary">
-                    Cleared {pluralize(resetSummary.entries_deleted, "entry", "entries")},{" "}
+                    Cleared {pluralize(resetSummary.products_deleted, "product", "products")},{" "}
+                    {pluralize(resetSummary.candidates_deleted, "candidate", "candidates")},{" "}
                     {pluralize(resetSummary.draws_deleted, "draw", "draws")}, and{" "}
                     {pluralize(resetSummary.winners_deleted, "winner", "winners")}.
                   </p>
@@ -457,10 +387,6 @@ export default function AdminDashboard() {
             </section>
           </>
         )}
-
-        <Link className="nav-link" to="/results">
-          View public results page
-        </Link>
       </main>
     </div>
   );

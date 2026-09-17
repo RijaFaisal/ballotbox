@@ -18,7 +18,8 @@ def reset_ballot_endpoint(
     except ResetNotConfirmedError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return BallotResetResult(
-        entries_deleted=counts.entries_deleted,
+        products_deleted=counts.products_deleted,
+        candidates_deleted=counts.candidates_deleted,
         draws_deleted=counts.draws_deleted,
         winners_deleted=counts.winners_deleted,
     )

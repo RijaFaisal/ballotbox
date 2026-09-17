@@ -9,8 +9,10 @@ from app.models.draw import Draw, DrawStatus
 from app.models.winner import Winner
 
 
-def create_pending(db: Session, seed: str, winner_count: int) -> Draw:
-    draw = Draw(seed=seed, winner_count=winner_count, status=DrawStatus.PENDING)
+def create_pending(db: Session, product_id: int, seed: str, winner_count: int) -> Draw:
+    draw = Draw(
+        product_id=product_id, seed=seed, winner_count=winner_count, status=DrawStatus.PENDING
+    )
     db.add(draw)
     db.commit()
     db.refresh(draw)

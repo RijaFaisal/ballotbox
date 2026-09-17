@@ -6,6 +6,7 @@ class BallotResetRequest(BaseModel):
 
 
 class BallotResetResult(BaseModel):
-    entries_deleted: int
+    products_deleted: int
+    candidates_deleted: int
     draws_deleted: int
     winners_deleted: int

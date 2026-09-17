@@ -5,10 +5,11 @@ SQLite ignores ON DELETE RESTRICT / CASCADE entirely unless
 `db_session` fixture never sets it, so a wrong deletion order there would
 pass silently even though it would raise an IntegrityError against
 Postgres. These tests turn foreign-key enforcement on explicitly so the
-constraint is actually real, then prove: (1) the constraint is real -- an
-entry can't be deleted out from under its winner row, which is exactly the
-mistake the reset must avoid; (2) the reset's actual order (winners, then
-draws, then entries) works even under that real enforcement.
+constraint is actually real, then prove: (1) the constraint is real -- a
+candidate can't be deleted out from under its winner row, which is exactly
+the mistake the reset must avoid; (2) the reset's actual order (winners,
+then draws, then candidates, then products) works even under that real
+enforcement.
 """
 import pytest
 from sqlalchemy import create_engine, delete, event
@@ -18,10 +19,10 @@ from sqlalchemy.pool import StaticPool
 
 from app import models  # noqa: F401  ensures all tables are registered on Base
 from app.database import Base
+from app.models.candidate import Candidate
 from app.models.draw import Draw, DrawStatus
-from app.models.entry import Entry
 from app.models.winner import Winner
-from app.repositories import entry_repository, reset_repository
+from app.repositories import candidate_repository, product_repository, reset_repository
 
 
 def _fk_enforcing_session():
@@ -41,32 +42,36 @@ def _fk_enforcing_session():
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)()
 
 
-def _seed_entry_draw_winner(db):
-    entry = entry_repository.create(db, name="Alice", identifier="alice@example.com")
-    draw = Draw(seed="seed", winner_count=1, status=DrawStatus.COMPLETED)
+def _seed_product_candidate_draw_winner(db):
+    product = product_repository.create(db, name="Grand Prize")
+    candidate = candidate_repository.create(
+        db, product_id=product.id, name="Alice", email="alice@example.com", cnic=None
+    )
+    draw = Draw(product_id=product.id, seed="seed", winner_count=1, status=DrawStatus.COMPLETED)
     db.add(draw)
     db.commit()
     db.refresh(draw)
-    db.add(Winner(draw_id=draw.id, entry_id=entry.id, position=1))
+    db.add(Winner(draw_id=draw.id, candidate_id=candidate.id, position=1))
     db.commit()
-    return entry, draw
+    return product, candidate, draw
 
 
-def test_deleting_an_entry_before_its_winner_is_rejected():
+def test_deleting_a_candidate_before_its_winner_is_rejected():
     db = _fk_enforcing_session()
-    entry, _draw = _seed_entry_draw_winner(db)
+    _product, candidate, _draw = _seed_product_candidate_draw_winner(db)
 
     with pytest.raises(IntegrityError):
-        db.execute(delete(Entry).where(Entry.id == entry.id))
+        db.execute(delete(Candidate).where(Candidate.id == candidate.id))
         db.commit()
 
 
 def test_reset_ballot_succeeds_under_real_foreign_key_enforcement():
     db = _fk_enforcing_session()
-    _seed_entry_draw_winner(db)
+    _seed_product_candidate_draw_winner(db)
 
     counts = reset_repository.reset_ballot(db)
 
-    assert counts.entries_deleted == 1
+    assert counts.products_deleted == 1
+    assert counts.candidates_deleted == 1
     assert counts.draws_deleted == 1
     assert counts.winners_deleted == 1

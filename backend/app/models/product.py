@@ -9,17 +9,21 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
-    from app.models.winner import Winner
+    from app.models.candidate import Candidate
+    from app.models.draw import Draw
 
 
-class Entry(Base):
-    __tablename__ = "entries"
+class Product(Base):
+    __tablename__ = "products"
 
+    # Case-insensitive uniqueness on name is enforced by a functional index
+    # (uq_products_name_lower) created in the migration, not representable
+    # as a plain SQLAlchemy column constraint.
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    identifier: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    winners: Mapped[list["Winner"]] = relationship(back_populates="entry")
+    candidates: Mapped[list["Candidate"]] = relationship(back_populates="product")
+    draws: Mapped[list["Draw"]] = relationship(back_populates="product")
