@@ -125,7 +125,7 @@ export default function EntryForm() {
           <div className="panel panel--raised">
             <h1>You're in.</h1>
             <p>
-              Thanks, <strong>{confirmation.name}</strong> — you're entered for{" "}
+              Thanks, <strong>{confirmation.name}</strong> , you're entered for{" "}
               <strong>{confirmation.product_name}</strong>.
             </p>
             <button type="button" onClick={handleEnterAnother}>

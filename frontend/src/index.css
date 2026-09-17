@@ -37,13 +37,16 @@
      green + teal + amber on white/black, high contrast, no warm undertones.
      Structure and spacing are unchanged from the original tactile-brutalist
      system -- only the hues feeding these same tokens have moved. */
-  --color-paper: #ffffff;
-  --color-paper-admin: #f7f7f7;
+  /* Page bg vs. card bg is the primary separation mechanism (#f5f5f5 vs.
+     white) -- borders are a subtle secondary reinforcement, never a heavy
+     black outline. */
+  --color-paper: #f5f5f5;
+  --color-paper-admin: #f5f5f5;
   --color-surface: #ffffff;
   --color-ink: #1a1a1a;
   --color-ink-muted: #595959;
-  --color-border: #000000;
-  --color-border-subtle: #d9d9d9;
+  --color-border: #e0e0e0;
+  --color-border-subtle: #e0e0e0;
 
   --color-heading: #008047;
   --color-brand-green: #008047;
@@ -60,9 +63,9 @@
   --color-highlight: #e6f3ec;
 
   --color-success: #008047;
-  --color-success-bg: #e0f2e8;
-  --color-danger: #a92318;
-  --color-danger-bg: #fbe8e4;
+  --color-success-bg: #e6f4ec;
+  --color-danger: #b3261e;
+  --color-danger-bg: #fdecea;
   --color-warning: #b9791f;
   --color-warning-bg: #fdf1de;
 
@@ -86,8 +89,11 @@
 
   /* -- Structure ----------------------------------------------------------*/
   --border-thin: 1px;
-  --border-thick: 2px;
+  --border-thick: 1px;
+  --color-border-strong: #000000;
   --radius: 0px;
+  --radius-pill: 999px;
+  --card-padding: 1.5rem; /* 24px baseline, consistent across cards/sections */
   --shadow-sm: 0 1px 3px rgba(23, 19, 15, 0.1);
   --shadow-md: 0 4px 10px rgba(23, 19, 15, 0.12);
   --shadow-lg: 0 8px 20px rgba(23, 19, 15, 0.14);
@@ -302,19 +308,13 @@ a:hover {
 
 .panel {
   background: var(--color-surface);
-  border: var(--border-thick) solid var(--color-border);
+  border: var(--border-thin) solid var(--color-border-strong);
   border-radius: var(--radius);
-  padding: var(--space-5);
+  padding: var(--card-padding);
 }
 
 .panel--raised {
   box-shadow: var(--shadow-md);
-}
-
-@media (min-width: 640px) {
-  .panel {
-    padding: var(--space-6);
-  }
 }
 
 .section {
@@ -439,10 +439,12 @@ button {
   font-size: var(--font-size-sm);
   padding: var(--space-3) var(--space-5);
   min-height: 3rem;
-  border: var(--border-thick) solid var(--color-border);
+  border: var(--border-thick) solid var(--color-brand-green);
   border-radius: var(--radius);
-  background: var(--color-ink);
-  color: var(--color-accent-ink);
+  /* Default (unclassed) buttons render as the low-emphasis "tertiary"
+     tier -- white background, brand-green border + text. Never black. */
+  background: #ffffff;
+  color: var(--color-brand-green);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast),
@@ -452,6 +454,7 @@ button {
 button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  background: var(--color-highlight);
 }
 
 button:active:not(:disabled) {
@@ -475,11 +478,13 @@ button:disabled {
 .primary-button {
   background: var(--color-brand-green);
   border-color: var(--color-brand-green);
+  color: #ffffff;
 }
 
 .primary-button:hover:not(:disabled) {
   background: var(--color-brand-green-hover);
   border-color: var(--color-brand-green-hover);
+  color: #ffffff;
 }
 
 .secondary-button {
@@ -506,7 +511,13 @@ button:disabled {
 
 .danger-button {
   background: var(--color-danger);
+  border-color: var(--color-danger);
   color: var(--color-accent-ink);
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #8f1e17;
+  border-color: #8f1e17;
 }
 
 .danger-button:disabled,
@@ -540,47 +551,45 @@ button:disabled {
 
 /* -- Badges / status pills ----------------------------------------------------*/
 
-.badge {
+/* Status indicators are small tinted pills (light background + matching
+   dark text), never bold solid-color bars or borders. Both a plain badge
+   (.badge) and the ballot status line (.status-line__word) share these
+   color classes so open/closed/pending always look the same. */
+.badge,
+.status-line__word {
   display: inline-block;
   font-family: var(--font-body);
   font-weight: 700;
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-thin) solid currentColor;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
 }
 
-.badge--success {
+.badge {
+  font-size: var(--font-size-xs);
+}
+
+.badge--success,
+.status-line__word.badge--success {
   color: var(--color-success);
-}
-
-.badge--danger {
-  color: var(--color-danger);
-}
-
-.badge--warning {
-  color: var(--color-warning);
-}
-
-.badge--neutral {
-  color: var(--color-ink-muted);
-}
-
-/* Background fills only apply when .badge itself is present, so the
-   ballot-status line (which reuses .badge--success/--danger for color
-   only, on a plain dot + word, not an actual badge) isn't affected. */
-.badge.badge--success {
   background: var(--color-success-bg);
 }
 
-.badge.badge--danger {
+.badge--danger,
+.status-line__word.badge--danger {
+  color: var(--color-danger);
   background: var(--color-danger-bg);
 }
 
-.badge.badge--warning {
+.badge--warning,
+.status-line__word.badge--warning {
+  color: var(--color-warning);
   background: var(--color-warning-bg);
 }
 
-.badge.badge--neutral {
-  background: var(--color-border-subtle);
+.badge--neutral,
+.status-line__word.badge--neutral {
+  color: var(--color-ink-muted);
+  background: #ececec;
 }
 
 /* -- Status line (ballot status: dot + word + muted context text) -----------*/
@@ -598,10 +607,6 @@ button:disabled {
   border-radius: 50%;
   flex-shrink: 0;
   background: currentColor;
-}
-
-.status-line__word {
-  font-weight: 700;
 }
 
 /* -- Stat / count chip --------------------------------------------------------*/
@@ -625,18 +630,9 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  border: var(--border-thick) solid var(--color-border);
-  border-left-width: 8px;
-  background: var(--color-paper);
-}
-
-.status-strip--open {
-  border-left-color: var(--color-success);
-}
-
-.status-strip--closed {
-  border-left-color: var(--color-danger);
+  padding: var(--card-padding);
+  border: var(--border-thin) solid var(--color-border-strong);
+  background: var(--color-surface);
 }
 
 .status-strip p {
@@ -726,8 +722,8 @@ button:disabled {
 
 .last-draw-result {
   margin-top: var(--space-5);
-  padding: var(--space-4);
-  border: var(--border-thick) solid var(--color-border);
+  padding: var(--card-padding);
+  border: var(--border-thin) solid var(--color-border-subtle);
   background: var(--color-highlight);
 }
 
@@ -745,7 +741,9 @@ button:disabled {
 
 .table-scroll {
   overflow-x: auto;
-  border: var(--border-thick) solid var(--color-border);
+  border: var(--border-thin) solid var(--color-border-strong);
+  background: var(--color-surface);
+  margin-bottom: var(--space-4);
 }
 
 .data-table {
@@ -762,7 +760,7 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: var(--space-3);
-  border-bottom: var(--border-thick) solid var(--color-border);
+  border-bottom: var(--border-thick) solid var(--color-border-strong);
 }
 
 .data-table td {
@@ -787,12 +785,22 @@ button:disabled {
 .table-actions {
   display: flex;
   gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .data-table-expanded {
   background: var(--color-paper-admin);
   border-bottom: var(--border-thin) solid var(--color-border-subtle);
   font-family: var(--font-body);
+  padding: var(--space-5);
+}
+
+.data-table-expanded h3 {
+  margin-top: var(--space-5);
+}
+
+.data-table-expanded h3:first-child {
+  margin-top: 0;
 }
 
 .data-table-expanded .winners-list {
@@ -802,9 +810,9 @@ button:disabled {
 /* -- Danger zone ----------------------------------------------------------------*/
 
 .danger-zone {
-  border: var(--border-thick) solid var(--color-danger);
+  border: var(--border-thin) solid var(--color-danger);
   background: var(--color-danger-bg);
-  padding: var(--space-5);
+  padding: var(--card-padding);
 }
 
 .danger-zone h2 {
@@ -910,4 +918,34 @@ button:disabled {
     gap: var(--space-6);
     align-items: start;
   }
+}
+
+/* -- Consistent spacing after tables/panels, applied globally -------------- */
+
+.table-scroll,
+.panel,
+.status-strip,
+.winners-list,
+.entries-list {
+  margin-bottom: var(--space-4);
+}
+
+/* Any button or button-row immediately following one of the above
+   elements gets consistent top spacing, so no border/edge ever touches
+   the element above it, anywhere in the app. */
+.table-scroll+button,
+.table-scroll+.button-row,
+.table-scroll+.table-actions,
+.panel+button,
+.panel+.button-row,
+.panel+.table-actions,
+.status-strip+button,
+.status-strip+.button-row {
+  margin-top: var(--space-4);
+}
+
+/* table-actions already has margin-bottom; add margin-top so it works
+   as a spacer in both directions regardless of what surrounds it */
+.table-actions {
+  margin-top: var(--space-4);
 }
