@@ -33,7 +33,6 @@
   --color-ink-muted: #5b544a;
   --color-border: #17130f;
   --color-border-subtle: #d8d0bd;
-  --color-slate: #5c4c42;
 
   --color-accent: #c1440e;
   --color-accent-ink: #fff8f0;
@@ -565,13 +564,13 @@ button:disabled {
 }
 
 .winner-tile {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: var(--font-size-base);
   min-width: 2.75rem;
   text-align: center;
   padding: var(--space-2) var(--space-1);
-  background: var(--color-slate);
+  background: var(--color-ink);
   color: var(--color-accent-ink);
   border-radius: 4px;
   flex-shrink: 0;
