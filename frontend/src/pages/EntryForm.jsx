@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import SiteHeader from "../components/SiteHeader.jsx";
 import { getBallotStatus, getEntryCount, submitEntry } from "../api/client.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -11,10 +12,6 @@ function validateIdentifier(value) {
     return null;
   }
   return "Enter a valid email address or CNIC (e.g. 12345-1234567-1)";
-}
-
-function formatEntryCount(count) {
-  return `${count} ${count === 1 ? "person has" : "people have"} entered`;
 }
 
 export default function EntryForm() {
@@ -87,78 +84,101 @@ export default function EntryForm() {
 
   if (pageState === "loading") {
     return (
-      <div className="page">
-        <div className="card">
-          <p>Loading...</p>
-        </div>
+      <div className="site-shell">
+        <SiteHeader />
+        <main className="site-main">
+          <p className="helper-text">Loading…</p>
+        </main>
       </div>
     );
   }
 
   if (pageState === "closed") {
     return (
-      <div className="page">
-        <div className="card">
-          <h1>Ballot closed</h1>
-          <p>This ballot isn't accepting new entries right now. Check back later.</p>
-          <Link className="nav-link" to="/results">
-            View results
-          </Link>
-        </div>
+      <div className="site-shell">
+        <SiteHeader />
+        <main className="site-main">
+          <div className="panel panel--raised">
+            <span className="eyebrow">Ballot status</span>
+            <h1>Ballot closed</h1>
+            <p>This ballot isn't accepting new entries right now. Check back later.</p>
+            <Link className="nav-link" to="/results">
+              View results
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (status === "success") {
     return (
-      <div className="page">
-        <div className="card">
-          <h1>You're entered</h1>
-          <p>Thanks, your entry has been recorded.</p>
-          {entryCount !== null && <p className="entry-count">{formatEntryCount(entryCount)}</p>}
-          <button type="button" onClick={() => setStatus("idle")}>
-            Submit another entry
-          </button>
-          <Link className="nav-link" to="/results">
-            View results
-          </Link>
-        </div>
+      <div className="site-shell">
+        <SiteHeader />
+        <main className="site-main">
+          <div className="panel panel--raised">
+            <span className="eyebrow">Confirmed</span>
+            <h1>You're in.</h1>
+            <p>Thanks — your entry has been recorded.</p>
+            {entryCount !== null && (
+              <p className="stat-chip">
+                <strong>{entryCount}</strong>{" "}
+                {entryCount === 1 ? "person has" : "people have"} entered
+              </p>
+            )}
+            <button type="button" onClick={() => setStatus("idle")}>
+              Submit another entry
+            </button>
+            <Link className="nav-link" to="/results">
+              View results
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <div className="card">
-        <h1>Enter the ballot</h1>
-        {entryCount !== null && <p className="entry-count">{formatEntryCount(entryCount)}</p>}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="field">
-            <label htmlFor="name">Name</label>
-            <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-            {errors.name && <p className="error-text">{errors.name}</p>}
-          </div>
+    <div className="site-shell">
+      <SiteHeader />
+      <main className="site-main">
+        <div className="panel panel--raised">
+          <span className="eyebrow">Fair · Random · Auditable</span>
+          <h1>Enter the ballot</h1>
+          {entryCount !== null && (
+            <p className="stat-chip">
+              <strong>{entryCount}</strong>{" "}
+              {entryCount === 1 ? "person has" : "people have"} entered
+            </p>
+          )}
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="field">
+              <label htmlFor="name">Name</label>
+              <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              {errors.name && <p className="error-text">{errors.name}</p>}
+            </div>
 
-          <div className="field">
-            <label htmlFor="identifier">Email or CNIC</label>
-            <input
-              id="identifier"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-            />
-            {errors.identifier && <p className="error-text">{errors.identifier}</p>}
-          </div>
+            <div className="field">
+              <label htmlFor="identifier">Email or CNIC</label>
+              <input
+                id="identifier"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+              />
+              {errors.identifier && <p className="error-text">{errors.identifier}</p>}
+            </div>
 
-          {serverError && <p className="error-text">{serverError}</p>}
+            {serverError && <p className="error-text">{serverError}</p>}
 
-          <button type="submit" disabled={status === "submitting"}>
-            {status === "submitting" ? "Submitting..." : "Submit entry"}
-          </button>
-        </form>
-        <Link className="nav-link" to="/results">
-          View results
-        </Link>
-      </div>
+            <button type="submit" disabled={status === "submitting"}>
+              {status === "submitting" ? "Submitting…" : "Submit entry"}
+            </button>
+          </form>
+          <Link className="nav-link" to="/results">
+            View results
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }

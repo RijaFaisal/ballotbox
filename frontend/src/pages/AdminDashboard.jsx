@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import SiteHeader from "../components/SiteHeader.jsx";
 import {
   UnauthorizedError,
   clearToken,
@@ -23,6 +24,16 @@ function formatDateTime(isoString) {
 
 function pluralize(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function statusBadgeClass(drawStatus) {
+  if (drawStatus === "completed") return "badge badge--success";
+  if (drawStatus === "failed") return "badge badge--danger";
+  return "badge badge--neutral";
 }
 
 export default function AdminDashboard() {
@@ -147,145 +158,173 @@ export default function AdminDashboard() {
   const isLoading = entries === null || draws === null || ballotStatus === null;
 
   return (
-    <div className="page">
-      <div className="card admin-card">
-        <div className="admin-header">
-          <h1>Admin dashboard</h1>
-          <button type="button" className="secondary-button" onClick={handleLogout}>
+    <div className="site-shell">
+      <SiteHeader
+        eyebrow="Admin"
+        action={
+          <button type="button" className="secondary-button small-button" onClick={handleLogout}>
             Log out
           </button>
+        }
+      />
+      <main className="site-main site-main--wide">
+        <div className="admin-header">
+          <div>
+            <span className="eyebrow">Control panel</span>
+            <h1>Admin dashboard</h1>
+          </div>
         </div>
 
         {loadError && <p className="error-text">{loadError}</p>}
 
-        {isLoading && !loadError && <p>Loading dashboard...</p>}
+        {isLoading && !loadError && <p className="helper-text">Loading dashboard…</p>}
 
         {!isLoading && (
           <>
-            <section className="admin-section ballot-status-section">
-              <h2>Ballot status</h2>
-              <p>
-                The ballot is currently{" "}
-                <strong className={ballotStatus.is_open ? "status-open" : "status-closed"}>
-                  {ballotStatus.is_open ? "OPEN" : "CLOSED"}
-                </strong>{" "}
-                to new entries.
-              </p>
-              {toggleError && <p className="error-text">{toggleError}</p>}
-              <button
-                type="button"
-                className={ballotStatus.is_open ? "warning-button" : ""}
-                onClick={handleToggleBallot}
-                disabled={toggleStatus === "submitting"}
+            <section className="section">
+              <div
+                className={`status-strip ${
+                  ballotStatus.is_open ? "status-strip--open" : "status-strip--closed"
+                }`}
               >
-                {toggleStatus === "submitting"
-                  ? "Updating..."
-                  : ballotStatus.is_open
-                    ? "Close ballot"
-                    : "Open ballot"}
-              </button>
-            </section>
-
-            <section className="admin-section">
-              <h2>Entries ({entries.length})</h2>
-              {entries.length === 0 ? (
-                <p>No entries yet.</p>
-              ) : (
-                <ul className="entries-list">
-                  {entries.map((entry) => (
-                    <li key={entry.id}>{entry.name}</li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="admin-section">
-              <h2>Run a draw</h2>
-              <form onSubmit={handleRunDraw} className="run-draw-form">
-                <div className="field">
-                  <label htmlFor="winnerCount">Number of winners</label>
-                  <input
-                    id="winnerCount"
-                    type="number"
-                    min="1"
-                    value={winnerCount}
-                    onChange={(e) => setWinnerCount(e.target.value)}
-                  />
+                <div>
+                  <span className="eyebrow">Ballot status</span>
+                  <p>
+                    <span
+                      className={`badge ${
+                        ballotStatus.is_open ? "badge--success" : "badge--danger"
+                      }`}
+                    >
+                      {ballotStatus.is_open ? "Open" : "Closed"}
+                    </span>{" "}
+                    to new entries
+                  </p>
+                  {toggleError && <p className="error-text">{toggleError}</p>}
                 </div>
-                {runDrawError && <p className="error-text">{runDrawError}</p>}
-                <button type="submit" disabled={runDrawStatus === "submitting"}>
-                  {runDrawStatus === "submitting" ? "Running draw..." : "Run draw"}
+                <button
+                  type="button"
+                  className={ballotStatus.is_open ? "warning-button" : ""}
+                  onClick={handleToggleBallot}
+                  disabled={toggleStatus === "submitting"}
+                >
+                  {toggleStatus === "submitting"
+                    ? "Updating…"
+                    : ballotStatus.is_open
+                      ? "Close ballot"
+                      : "Open ballot"}
                 </button>
-              </form>
-
-              {lastDraw && (
-                <div className="last-draw-result">
-                  <h3>Draw #{lastDraw.id} winners</h3>
-                  <ol className="winners-list">
-                    {lastDraw.winners.map((winner) => (
-                      <li key={winner.position}>
-                        <span className="winner-position">#{winner.position}</span>{" "}
-                        {winner.entry.name}
-                      </li>
-                    ))}
-                  </ol>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => handleDownloadCsv(lastDraw.id)}
-                  >
-                    Download CSV
-                  </button>
-                </div>
-              )}
+              </div>
             </section>
 
-            <section className="admin-section">
+            <div className="section dashboard-grid">
+              <section className="panel">
+                <h2>
+                  Entries <span className="mono">({entries.length})</span>
+                </h2>
+                {entries.length === 0 ? (
+                  <p className="helper-text">No entries yet.</p>
+                ) : (
+                  <ul className="entries-list">
+                    {entries.map((entry) => (
+                      <li key={entry.id}>{entry.name}</li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="panel">
+                <h2>Run a draw</h2>
+                <form onSubmit={handleRunDraw} className="run-draw-form">
+                  <div className="field">
+                    <label htmlFor="winnerCount">Number of winners</label>
+                    <input
+                      id="winnerCount"
+                      type="number"
+                      min="1"
+                      value={winnerCount}
+                      onChange={(e) => setWinnerCount(e.target.value)}
+                    />
+                  </div>
+                  {runDrawError && <p className="error-text">{runDrawError}</p>}
+                  <button type="submit" disabled={runDrawStatus === "submitting"}>
+                    {runDrawStatus === "submitting" ? "Running draw…" : "Run draw"}
+                  </button>
+                </form>
+
+                {lastDraw && (
+                  <div className="last-draw-result">
+                    <span className="eyebrow">Draw #{lastDraw.id}</span>
+                    <h3>Winners</h3>
+                    <ol className="winners-list">
+                      {lastDraw.winners.map((winner) => (
+                        <li key={winner.position} className="winner-row">
+                          <span className="winner-tile">{pad2(winner.position)}</span>
+                          <span className="winner-name">{winner.entry.name}</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleDownloadCsv(lastDraw.id)}
+                    >
+                      Download CSV
+                    </button>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <section className="section">
               <h2>Past draws</h2>
               {csvError && <p className="error-text">{csvError}</p>}
               {draws.length === 0 ? (
-                <p>No draws yet.</p>
+                <p className="helper-text">No draws yet.</p>
               ) : (
-                <table className="draws-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Status</th>
-                      <th>Winners</th>
-                      <th>Drawn at</th>
-                      <th>Seed</th>
-                      <th>Export</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {draws.map((draw) => (
-                      <tr key={draw.id}>
-                        <td>{draw.id}</td>
-                        <td>{draw.status}</td>
-                        <td>{draw.winner_count}</td>
-                        <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
-                        <td className="seed-cell">{draw.seed}</td>
-                        <td>
-                          {draw.status === "completed" ? (
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              onClick={() => handleDownloadCsv(draw.id)}
-                            >
-                              CSV
-                            </button>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
+                <div className="table-scroll">
+                  <table className="draws-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Status</th>
+                        <th>Winners</th>
+                        <th>Drawn at</th>
+                        <th>Seed</th>
+                        <th>Export</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {draws.map((draw) => (
+                        <tr key={draw.id}>
+                          <td>{draw.id}</td>
+                          <td>
+                            <span className={statusBadgeClass(draw.status)}>{draw.status}</span>
+                          </td>
+                          <td>{draw.winner_count}</td>
+                          <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
+                          <td className="seed-cell">{draw.seed}</td>
+                          <td>
+                            {draw.status === "completed" ? (
+                              <button
+                                type="button"
+                                className="secondary-button small-button"
+                                onClick={() => handleDownloadCsv(draw.id)}
+                              >
+                                CSV
+                              </button>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </section>
 
-            <section className="admin-section danger-zone">
+            <section className="section danger-zone">
               <h2>Reset ballot</h2>
               <p className="danger-warning">
                 This permanently deletes every entry, draw, and winner so a new
@@ -321,7 +360,7 @@ export default function AdminDashboard() {
                     resetStatus === "submitting" || resetInput !== RESET_CONFIRM_PHRASE
                   }
                 >
-                  {resetStatus === "submitting" ? "Resetting..." : "Reset ballot"}
+                  {resetStatus === "submitting" ? "Resetting…" : "Reset ballot"}
                 </button>
               </form>
             </section>
@@ -331,7 +370,7 @@ export default function AdminDashboard() {
         <Link className="nav-link" to="/results">
           View public results page
         </Link>
-      </div>
+      </main>
     </div>
   );
 }

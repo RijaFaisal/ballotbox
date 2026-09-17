@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import SiteHeader from "../components/SiteHeader.jsx";
 import { login, setToken } from "../api/client.js";
 
 export default function AdminLogin() {
@@ -26,36 +27,40 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="page">
-      <div className="card">
-        <h1>Admin login</h1>
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="field">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
+    <div className="site-shell">
+      <SiteHeader eyebrow="Admin" />
+      <main className="site-main">
+        <div className="panel panel--raised">
+          <span className="eyebrow">Restricted access</span>
+          <h1>Admin login</h1>
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
 
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-          {error && <p className="error-text">{error}</p>}
+            {error && <p className="error-text">{error}</p>}
 
-          <button type="submit" disabled={status === "submitting"}>
-            {status === "submitting" ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-      </div>
+            <button type="submit" disabled={status === "submitting"}>
+              {status === "submitting" ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
