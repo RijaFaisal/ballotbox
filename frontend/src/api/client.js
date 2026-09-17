@@ -46,7 +46,9 @@ async function request(path, { isAdminRequest, ...options } = {}) {
       throw new UnauthorizedError("Session expired.");
     }
     const message = data?.detail;
-    throw new Error(typeof message === "string" ? message : "Request failed");
+    const error = new Error(typeof message === "string" ? message : "Request failed");
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -73,6 +75,18 @@ export function submitEntry(payload) {
 
 export function getResults() {
   return request("/results");
+}
+
+export function getEntryCount() {
+  return request("/entries/count");
+}
+
+export function getBallotStatus() {
+  return request("/ballot/status");
+}
+
+export function toggleBallotStatus() {
+  return adminRequest("/ballot/toggle", { method: "POST" });
 }
 
 export function login(payload) {
@@ -102,4 +116,34 @@ export function resetBallot(confirm) {
     method: "POST",
     body: JSON.stringify({ confirm }),
   });
+}
+
+export async function downloadDrawCsv(drawId) {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/draws/${drawId}/export`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      window.location.assign("/admin/login");
+      throw new UnauthorizedError("Session expired.");
+    }
+    throw new Error("Could not download the CSV.");
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `draw-${drawId}-winners.csv`;
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }

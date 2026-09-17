@@ -45,3 +45,7 @@ class EntryRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class EntryCountRead(BaseModel):
+    count: int

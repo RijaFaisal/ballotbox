@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_admin
 from app.database import get_db
 from app.repositories import draw_repository
 from app.schemas.draw import DrawCreate, DrawDetailRead, DrawRead
+from app.services import draw_export_service
 from app.services.draw_service import DrawAlreadyCompletedError, NotEnoughEntriesError, run_draw
 
 router = APIRouter(prefix="/draws", tags=["draws"], dependencies=[Depends(get_current_admin)])
@@ -38,3 +40,16 @@ def get_draw(draw_id: int, db: Session = Depends(get_db)) -> DrawDetailRead:
     if draw is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draw not found.")
     return DrawDetailRead.model_validate(draw)
+
+
+@router.get("/{draw_id}/export")
+def export_draw_winners_csv(draw_id: int, db: Session = Depends(get_db)) -> Response:
+    draw = draw_repository.get_by_id(db, draw_id)
+    if draw is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draw not found.")
+    csv_content = draw_export_service.winners_csv(db, draw)
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="draw-{draw_id}-winners.csv"'},
+    )

@@ -172,6 +172,10 @@ button:disabled {
   font-size: 15px;
 }
 
+.last-draw-result .secondary-button {
+  margin-top: 8px;
+}
+
 .draws-table {
   width: 100%;
   border-collapse: collapse;
@@ -225,4 +229,31 @@ button:disabled {
 
 .danger-button:disabled {
   background: #f3b3ac;
+}
+
+.entry-count {
+  color: #6e6e73;
+  font-size: 14px;
+  margin-top: -8px;
+}
+
+.ballot-status-section button {
+  width: auto;
+  padding: 8px 16px;
+}
+
+.status-open {
+  color: #1a7a3c;
+}
+
+.status-closed {
+  color: #d70015;
+}
+
+.warning-button {
+  background: #c26b00;
+}
+
+.warning-button:disabled {
+  background: #e9c496;
 }

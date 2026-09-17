@@ -4,9 +4,12 @@ import {
   UnauthorizedError,
   clearToken,
   createDraw,
+  downloadDrawCsv,
+  getBallotStatus,
   listDraws,
   listEntries,
   resetBallot,
+  toggleBallotStatus,
 } from "../api/client.js";
 
 const RESET_CONFIRM_PHRASE = "RESET";
@@ -25,6 +28,7 @@ function pluralize(count, singular, plural) {
 export default function AdminDashboard() {
   const [entries, setEntries] = useState(null);
   const [draws, setDraws] = useState(null);
+  const [ballotStatus, setBallotStatus] = useState(null);
   const [loadError, setLoadError] = useState("");
 
   const [winnerCount, setWinnerCount] = useState("");
@@ -37,11 +41,19 @@ export default function AdminDashboard() {
   const [resetError, setResetError] = useState("");
   const [resetSummary, setResetSummary] = useState(null);
 
+  const [toggleStatus, setToggleStatus] = useState("idle");
+  const [toggleError, setToggleError] = useState("");
+
+  const [csvError, setCsvError] = useState("");
+
   function loadDashboardData() {
-    return Promise.all([listEntries(), listDraws()]).then(([entriesData, drawsData]) => {
-      setEntries(entriesData);
-      setDraws(drawsData);
-    });
+    return Promise.all([listEntries(), listDraws(), getBallotStatus()]).then(
+      ([entriesData, drawsData, statusData]) => {
+        setEntries(entriesData);
+        setDraws(drawsData);
+        setBallotStatus(statusData);
+      }
+    );
   }
 
   useEffect(() => {
@@ -103,12 +115,36 @@ export default function AdminDashboard() {
       });
   }
 
+  function handleToggleBallot() {
+    setToggleStatus("submitting");
+    setToggleError("");
+
+    toggleBallotStatus()
+      .then((status) => {
+        setBallotStatus(status);
+        setToggleStatus("idle");
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setToggleStatus("idle");
+        setToggleError(err.message);
+      });
+  }
+
+  function handleDownloadCsv(drawId) {
+    setCsvError("");
+    downloadDrawCsv(drawId).catch((err) => {
+      if (err instanceof UnauthorizedError) return;
+      setCsvError(err.message);
+    });
+  }
+
   function handleLogout() {
     clearToken();
     window.location.assign("/admin/login");
   }
 
-  const isLoading = entries === null || draws === null;
+  const isLoading = entries === null || draws === null || ballotStatus === null;
 
   return (
     <div className="page">
@@ -126,6 +162,30 @@ export default function AdminDashboard() {
 
         {!isLoading && (
           <>
+            <section className="admin-section ballot-status-section">
+              <h2>Ballot status</h2>
+              <p>
+                The ballot is currently{" "}
+                <strong className={ballotStatus.is_open ? "status-open" : "status-closed"}>
+                  {ballotStatus.is_open ? "OPEN" : "CLOSED"}
+                </strong>{" "}
+                to new entries.
+              </p>
+              {toggleError && <p className="error-text">{toggleError}</p>}
+              <button
+                type="button"
+                className={ballotStatus.is_open ? "warning-button" : ""}
+                onClick={handleToggleBallot}
+                disabled={toggleStatus === "submitting"}
+              >
+                {toggleStatus === "submitting"
+                  ? "Updating..."
+                  : ballotStatus.is_open
+                    ? "Close ballot"
+                    : "Open ballot"}
+              </button>
+            </section>
+
             <section className="admin-section">
               <h2>Entries ({entries.length})</h2>
               {entries.length === 0 ? (
@@ -169,12 +229,20 @@ export default function AdminDashboard() {
                       </li>
                     ))}
                   </ol>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => handleDownloadCsv(lastDraw.id)}
+                  >
+                    Download CSV
+                  </button>
                 </div>
               )}
             </section>
 
             <section className="admin-section">
               <h2>Past draws</h2>
+              {csvError && <p className="error-text">{csvError}</p>}
               {draws.length === 0 ? (
                 <p>No draws yet.</p>
               ) : (
@@ -186,6 +254,7 @@ export default function AdminDashboard() {
                       <th>Winners</th>
                       <th>Drawn at</th>
                       <th>Seed</th>
+                      <th>Export</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -196,6 +265,19 @@ export default function AdminDashboard() {
                         <td>{draw.winner_count}</td>
                         <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
                         <td className="seed-cell">{draw.seed}</td>
+                        <td>
+                          {draw.status === "completed" ? (
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => handleDownloadCsv(draw.id)}
+                            >
+                              CSV
+                            </button>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
