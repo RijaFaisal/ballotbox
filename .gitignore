@@ -21,3 +21,7 @@ dist/
 
 # Logs
 *.log
+BallotBox-win32-x64/
+*.exe
+BallotBox-win32-x64/
+*.exe

@@ -27,6 +27,7 @@ _MIN_PASSWORD_LENGTH = 8
 
 
 def create_admin(username: str, password: str) -> None:
+    username = username.strip().lower()
     db = SessionLocal()
     try:
         if admin_repository.get_by_username(db, username) is not None:

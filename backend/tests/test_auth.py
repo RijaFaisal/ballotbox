@@ -25,6 +25,14 @@ def test_login_with_correct_credentials_returns_token(client, admin):
     assert body["access_token"]
 
 
+def test_login_is_case_insensitive_on_username(client, admin):
+    response = client.post(
+        "/auth/login", json={"username": "RoOt", "password": "correct-horse-battery"}
+    )
+    assert response.status_code == 200
+    assert response.json()["access_token"]
+
+
 def test_login_with_wrong_password_returns_401(client, admin):
     response = client.post("/auth/login", json={"username": "root", "password": "wrong"})
     assert response.status_code == 401

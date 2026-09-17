@@ -10,6 +10,9 @@ export default function SiteHeader({ eyebrow, action }) {
         {eyebrow && <span className="site-header__eyebrow">{eyebrow}</span>}
         {action && <div className="site-header__action">{action}</div>}
       </div>
+      <Link to="/admin" className="admin-access-button" title="Admin" aria-label="Admin">
+        ⚙
+      </Link>
     </header>
   );
 }
