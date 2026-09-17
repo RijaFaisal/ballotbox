@@ -39,6 +39,7 @@
   --color-highlight: #eae5d6;
 
   --color-success: #1f6d3f;
+  --color-success-bg: #e5f0e6;
   --color-danger: #a92318;
   --color-danger-bg: #fbe8e4;
   --color-warning: #8a5a00;
@@ -350,7 +351,7 @@ button {
   justify-content: center;
   gap: var(--space-2);
   width: 100%;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: var(--font-size-sm);
   padding: var(--space-3) var(--space-5);
@@ -445,21 +446,11 @@ button:disabled {
 /* -- Badges / status pills ----------------------------------------------------*/
 
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  /* No font overrides -- inherit size/family/weight from wherever the
-     badge is placed, so it reads as part of the same sentence/row
-     instead of a mismatched, differently-sized fragment. */
-}
-
-.badge::before {
-  content: "";
-  width: 0.4em;
-  height: 0.4em;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: currentColor;
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 700;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-thin) solid currentColor;
 }
 
 .badge--success {
@@ -476,6 +467,25 @@ button:disabled {
 
 .badge--neutral {
   color: var(--color-ink-muted);
+}
+
+/* Background fills only apply when .badge itself is present, so the
+   ballot-status line (which reuses .badge--success/--danger for color
+   only, on a plain dot + word, not an actual badge) isn't affected. */
+.badge.badge--success {
+  background: var(--color-success-bg);
+}
+
+.badge.badge--danger {
+  background: var(--color-danger-bg);
+}
+
+.badge.badge--warning {
+  background: var(--color-warning-bg);
+}
+
+.badge.badge--neutral {
+  background: var(--color-border-subtle);
 }
 
 /* -- Status line (ballot status: dot + word + muted context text) -----------*/
