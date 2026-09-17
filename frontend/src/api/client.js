@@ -96,3 +96,10 @@ export function createDraw(winnerCount) {
     body: JSON.stringify({ winner_count: winnerCount }),
   });
 }
+
+export function resetBallot(confirm) {
+  return adminRequest("/admin/reset", {
+    method: "POST",
+    body: JSON.stringify({ confirm }),
+  });
+}

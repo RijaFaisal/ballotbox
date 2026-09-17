@@ -191,3 +191,38 @@ button:disabled {
   word-break: break-all;
   max-width: 200px;
 }
+
+.danger-zone {
+  padding: 16px;
+  border: 1px solid #ffd1cc;
+  background: #fff5f4;
+  border-radius: 8px;
+}
+
+.danger-zone h2 {
+  color: #d70015;
+}
+
+.danger-warning {
+  font-size: 13px;
+  color: #86201a;
+  margin-top: 0;
+}
+
+.reset-form {
+  max-width: 320px;
+}
+
+.reset-summary {
+  color: #1a7a3c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.danger-button {
+  background: #d70015;
+}
+
+.danger-button:disabled {
+  background: #f3b3ac;
+}

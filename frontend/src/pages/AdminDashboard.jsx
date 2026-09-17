@@ -6,13 +6,20 @@ import {
   createDraw,
   listDraws,
   listEntries,
+  resetBallot,
 } from "../api/client.js";
+
+const RESET_CONFIRM_PHRASE = "RESET";
 
 function formatDateTime(isoString) {
   return new Date(isoString).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function pluralize(count, singular, plural) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 export default function AdminDashboard() {
@@ -25,16 +32,23 @@ export default function AdminDashboard() {
   const [runDrawError, setRunDrawError] = useState("");
   const [lastDraw, setLastDraw] = useState(null);
 
+  const [resetInput, setResetInput] = useState("");
+  const [resetStatus, setResetStatus] = useState("idle");
+  const [resetError, setResetError] = useState("");
+  const [resetSummary, setResetSummary] = useState(null);
+
+  function loadDashboardData() {
+    return Promise.all([listEntries(), listDraws()]).then(([entriesData, drawsData]) => {
+      setEntries(entriesData);
+      setDraws(drawsData);
+    });
+  }
+
   useEffect(() => {
-    Promise.all([listEntries(), listDraws()])
-      .then(([entriesData, drawsData]) => {
-        setEntries(entriesData);
-        setDraws(drawsData);
-      })
-      .catch((err) => {
-        if (err instanceof UnauthorizedError) return;
-        setLoadError(err.message);
-      });
+    loadDashboardData().catch((err) => {
+      if (err instanceof UnauthorizedError) return;
+      setLoadError(err.message);
+    });
   }, []);
 
   function handleRunDraw(event) {
@@ -60,6 +74,32 @@ export default function AdminDashboard() {
         if (err instanceof UnauthorizedError) return;
         setRunDrawStatus("idle");
         setRunDrawError(err.message);
+      });
+  }
+
+  function handleReset(event) {
+    event.preventDefault();
+    if (resetInput !== RESET_CONFIRM_PHRASE) {
+      setResetError(`Type ${RESET_CONFIRM_PHRASE} exactly to confirm.`);
+      return;
+    }
+
+    setResetStatus("submitting");
+    setResetError("");
+    setResetSummary(null);
+
+    resetBallot(resetInput)
+      .then((result) => {
+        setResetSummary(result);
+        setResetInput("");
+        setResetStatus("idle");
+        setLastDraw(null);
+        return loadDashboardData();
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setResetStatus("idle");
+        setResetError(err.message);
       });
   }
 
@@ -161,6 +201,47 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               )}
+            </section>
+
+            <section className="admin-section danger-zone">
+              <h2>Reset ballot</h2>
+              <p className="danger-warning">
+                This permanently deletes every entry, draw, and winner so a new
+                event can start from zero. It does not affect admin accounts.
+                Only do this between events, after any results you need have
+                already been recorded elsewhere — it is not a way to undo or
+                hide a completed draw.
+              </p>
+              <form onSubmit={handleReset} className="reset-form">
+                <div className="field">
+                  <label htmlFor="resetConfirm">
+                    Type <strong>{RESET_CONFIRM_PHRASE}</strong> to confirm
+                  </label>
+                  <input
+                    id="resetConfirm"
+                    value={resetInput}
+                    onChange={(e) => setResetInput(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+                {resetError && <p className="error-text">{resetError}</p>}
+                {resetSummary && (
+                  <p className="reset-summary">
+                    Cleared {pluralize(resetSummary.entries_deleted, "entry", "entries")},{" "}
+                    {pluralize(resetSummary.draws_deleted, "draw", "draws")}, and{" "}
+                    {pluralize(resetSummary.winners_deleted, "winner", "winners")}.
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  className="danger-button"
+                  disabled={
+                    resetStatus === "submitting" || resetInput !== RESET_CONFIRM_PHRASE
+                  }
+                >
+                  {resetStatus === "submitting" ? "Resetting..." : "Reset ballot"}
+                </button>
+              </form>
             </section>
           </>
         )}
