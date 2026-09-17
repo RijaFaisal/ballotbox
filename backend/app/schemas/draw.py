@@ -34,3 +34,8 @@ class WinnerRead(BaseModel):
 
 class DrawDetailRead(DrawRead):
     winners: list[WinnerRead]
+
+
+class DrawsClearResult(BaseModel):
+    draws_deleted: int
+    winners_deleted: int

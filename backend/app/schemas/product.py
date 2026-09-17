@@ -33,3 +33,15 @@ class ProductOption(BaseModel):
     name: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductDeleteResult(BaseModel):
+    candidates_deleted: int
+    draws_deleted: int
+    winners_deleted: int
+
+
+class ProductCandidatesClearResult(BaseModel):
+    candidates_deleted: int
+    draws_deleted: int
+    winners_deleted: int

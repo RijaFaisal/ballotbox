@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.draw import Draw, DrawStatus
@@ -96,3 +96,19 @@ def mark_failed(db: Session, draw: Draw) -> Draw:
     db.commit()
     db.refresh(draw)
     return draw
+
+
+def delete_by_product(db: Session, product_id: int) -> tuple[int, int]:
+    """Deletes all winners then draws for one product; returns
+    (draws_deleted, winners_deleted). Caller commits.
+
+    Winners must go first: winners.candidate_id is ON DELETE RESTRICT, and
+    winners.draw_id would cascade anyway, but deleting explicitly here (as
+    in reset_repository.reset_ballot) keeps the returned counts accurate
+    rather than relying on the DB cascade to do it silently.
+    """
+    winners_deleted = db.execute(
+        delete(Winner).where(Winner.draw_id.in_(select(Draw.id).where(Draw.product_id == product_id)))
+    ).rowcount
+    draws_deleted = db.execute(delete(Draw).where(Draw.product_id == product_id)).rowcount
+    return draws_deleted, winners_deleted

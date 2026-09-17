@@ -75,6 +75,12 @@ export function createProduct(name) {
 export function listCandidatesForProduct(productId) {
   return adminRequest(`/products/${productId}/candidates`);
 }
+export function deleteProduct(productId) {
+  return adminRequest(`/products/${productId}`, { method: "DELETE" });
+}
+export function clearProductCandidates(productId) {
+  return adminRequest(`/products/${productId}/candidates`, { method: "DELETE" });
+}
 
 export function getPublicProducts() {
   return request("/products/public");
@@ -88,6 +94,9 @@ export function createDraw(productId) {
 }
 export function listDrawsForProduct(productId) {
   return adminRequest(`/products/${productId}/draws`);
+}
+export function clearProductDraws(productId) {
+  return adminRequest(`/products/${productId}/draws`, { method: "DELETE" });
 }
 
 export async function downloadDrawPdf(productId, drawId) {

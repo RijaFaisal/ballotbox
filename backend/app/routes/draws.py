@@ -10,8 +10,8 @@ from app.core.deps import get_current_admin
 from app.database import get_db
 from app.repositories import draw_repository
 from app.routes.common import get_product_or_404
-from app.schemas.draw import DrawDetailRead
-from app.services import draw_export_service
+from app.schemas.draw import DrawDetailRead, DrawsClearResult
+from app.services import draw_export_service, product_service
 from app.services.draw_service import NotEnoughEntriesError, run_draw
 
 # Each product's draw is independent: winning one product never excludes a
@@ -45,6 +45,13 @@ def list_draws(product_id: int, db: Session = Depends(get_db)) -> list[DrawDetai
         DrawDetailRead.model_validate(draw)
         for draw in draw_repository.list_by_product(db, product_id)
     ]
+
+
+@router.delete("", response_model=DrawsClearResult)
+def clear_draws(product_id: int, db: Session = Depends(get_db)) -> DrawsClearResult:
+    get_product_or_404(db, product_id)
+    counts = product_service.clear_draws(db, product_id)
+    return DrawsClearResult(draws_deleted=counts.draws_deleted, winners_deleted=counts.winners_deleted)
 
 
 def _get_draw_for_product_or_404(db: Session, product_id: int, draw_id: int):

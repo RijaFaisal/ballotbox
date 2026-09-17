@@ -101,6 +101,51 @@ def test_export_draw_winner_pdf(client, db_session, auth_headers):
     assert response.content[:4] == b"%PDF"
 
 
+def test_clear_draws_requires_admin(client, db_session):
+    product = product_repository.create(db_session, name="Grand Prize")
+    response = client.delete(f"/products/{product.id}/draws")
+    assert response.status_code == 401
+
+
+def test_clear_draws_for_unknown_product_is_404(client, auth_headers):
+    response = client.delete("/products/999/draws", headers=auth_headers)
+    assert response.status_code == 404
+
+
+def test_clear_draws_keeps_candidates_and_allows_a_fresh_draw(client, db_session, auth_headers):
+    product = product_repository.create(db_session, name="Grand Prize")
+    _seed_candidates(db_session, product.id, 3)
+    client.post(f"/products/{product.id}/draws", headers=auth_headers)
+
+    response = client.delete(f"/products/{product.id}/draws", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.json() == {"draws_deleted": 1, "winners_deleted": 1}
+
+    history = client.get(f"/products/{product.id}/draws", headers=auth_headers).json()
+    assert history == []
+
+    candidates = client.get(f"/products/{product.id}/candidates", headers=auth_headers).json()
+    assert len(candidates) == 3
+
+    redraw = client.post(f"/products/{product.id}/draws", headers=auth_headers)
+    assert redraw.status_code == 201
+
+
+def test_clearing_draws_for_one_product_does_not_touch_another(client, db_session, auth_headers):
+    product_a = product_repository.create(db_session, name="Product A")
+    product_b = product_repository.create(db_session, name="Product B")
+    _seed_candidates(db_session, product_a.id, 3)
+    _seed_candidates(db_session, product_b.id, 3)
+    client.post(f"/products/{product_a.id}/draws", headers=auth_headers)
+    client.post(f"/products/{product_b.id}/draws", headers=auth_headers)
+
+    client.delete(f"/products/{product_a.id}/draws", headers=auth_headers)
+
+    assert client.get(f"/products/{product_a.id}/draws", headers=auth_headers).json() == []
+    assert len(client.get(f"/products/{product_b.id}/draws", headers=auth_headers).json()) == 1
+
+
 def test_export_pdf_filename_is_sanitized_against_header_injection(
     client, db_session, auth_headers
 ):

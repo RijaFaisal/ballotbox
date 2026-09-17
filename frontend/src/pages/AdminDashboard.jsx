@@ -2,9 +2,12 @@ import { Fragment, useEffect, useState } from "react";
 import SiteHeader from "../components/SiteHeader.jsx";
 import {
   UnauthorizedError,
+  clearProductCandidates,
+  clearProductDraws,
   clearToken,
   createDraw,
   createProduct,
+  deleteProduct,
   downloadDrawPdf,
   getBallotStatus,
   listCandidatesForProduct,
@@ -55,6 +58,9 @@ export default function AdminDashboard() {
   const [drawsByProduct, setDrawsByProduct] = useState({});
   const [runDrawState, setRunDrawState] = useState({});
   const [exportErrorByDraw, setExportErrorByDraw] = useState({});
+  const [deleteProductState, setDeleteProductState] = useState({});
+  const [clearDrawsState, setClearDrawsState] = useState({});
+  const [clearCandidatesState, setClearCandidatesState] = useState({});
 
   function loadDashboardData() {
     return Promise.all([listProducts(), getBallotStatus()]).then(
@@ -187,6 +193,101 @@ export default function AdminDashboard() {
     });
   }
 
+  function handleDeleteProduct(product) {
+    if (
+      !window.confirm(
+        `Delete "${product.name}" and all of its candidates and draws? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setDeleteProductState((prev) => ({ ...prev, [product.id]: { status: "submitting" } }));
+
+    deleteProduct(product.id)
+      .then(() => {
+        setProducts((prev) => (prev ?? []).filter((p) => p.id !== product.id));
+        setExpandedProductIds((prev) => {
+          const next = new Set(prev);
+          next.delete(product.id);
+          return next;
+        });
+        setCandidatesByProduct((prev) => {
+          const next = { ...prev };
+          delete next[product.id];
+          return next;
+        });
+        setDrawsByProduct((prev) => {
+          const next = { ...prev };
+          delete next[product.id];
+          return next;
+        });
+        setDeleteProductState((prev) => {
+          const next = { ...prev };
+          delete next[product.id];
+          return next;
+        });
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setDeleteProductState((prev) => ({
+          ...prev,
+          [product.id]: { status: "idle", error: err.message },
+        }));
+      });
+  }
+
+  function handleClearDraws(productId) {
+    if (
+      !window.confirm(
+        "Clear all draws for this product? Candidates are kept, so you can run a fresh draw right after."
+      )
+    ) {
+      return;
+    }
+
+    setClearDrawsState((prev) => ({ ...prev, [productId]: { status: "submitting" } }));
+
+    clearProductDraws(productId)
+      .then(() => {
+        setClearDrawsState((prev) => ({ ...prev, [productId]: { status: "idle" } }));
+        loadDraws(productId);
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setClearDrawsState((prev) => ({
+          ...prev,
+          [productId]: { status: "idle", error: err.message },
+        }));
+      });
+  }
+
+  function handleClearCandidates(productId) {
+    if (
+      !window.confirm(
+        "Clear all candidates for this product? This also clears its draw history, since past winners are recorded against these candidates."
+      )
+    ) {
+      return;
+    }
+
+    setClearCandidatesState((prev) => ({ ...prev, [productId]: { status: "submitting" } }));
+
+    clearProductCandidates(productId)
+      .then(() => {
+        setClearCandidatesState((prev) => ({ ...prev, [productId]: { status: "idle" } }));
+        loadCandidates(productId);
+        loadDraws(productId);
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setClearCandidatesState((prev) => ({
+          ...prev,
+          [productId]: { status: "idle", error: err.message },
+        }));
+      });
+  }
+
   function handleReset(event) {
     event.preventDefault();
     if (resetInput !== RESET_CONFIRM_PHRASE) {
@@ -292,7 +393,7 @@ export default function AdminDashboard() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="section panel">
               <h2>New product</h2>
               <form onSubmit={handleCreateProduct} className="run-draw-form">
                 <div className="field">
@@ -337,6 +438,13 @@ export default function AdminDashboard() {
                         const candidateState = candidatesByProduct[product.id];
                         const drawState = drawsByProduct[product.id];
                         const runState = runDrawState[product.id] ?? { status: "idle" };
+                        const deleteState = deleteProductState[product.id] ?? { status: "idle" };
+                        const clearDrawsStateForProduct = clearDrawsState[product.id] ?? {
+                          status: "idle",
+                        };
+                        const clearCandidatesStateForProduct = clearCandidatesState[
+                          product.id
+                        ] ?? { status: "idle" };
                         const candidateCount =
                           candidateState?.status === "loaded"
                             ? candidateState.candidates.length
@@ -348,14 +456,27 @@ export default function AdminDashboard() {
                               <td>{product.name}</td>
                               <td>{formatDateTime(product.created_at)}</td>
                               <td>
-                                <button
-                                  type="button"
-                                  className="secondary-button small-button"
-                                  aria-expanded={isExpanded}
-                                  onClick={() => toggleProductRow(product.id)}
-                                >
-                                  {isExpanded ? "Hide" : "Manage"}
-                                </button>
+                                <div className="table-actions">
+                                  <button
+                                    type="button"
+                                    className="secondary-button small-button"
+                                    aria-expanded={isExpanded}
+                                    onClick={() => toggleProductRow(product.id)}
+                                  >
+                                    {isExpanded ? "Hide" : "Manage"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="danger-button small-button"
+                                    onClick={() => handleDeleteProduct(product)}
+                                    disabled={deleteState.status === "submitting"}
+                                  >
+                                    {deleteState.status === "submitting" ? "Deleting…" : "Delete"}
+                                  </button>
+                                </div>
+                                {deleteState.error && (
+                                  <p className="error-text">{deleteState.error}</p>
+                                )}
                               </td>
                             </tr>
                             {isExpanded && (
@@ -403,19 +524,58 @@ export default function AdminDashboard() {
                                         </table>
                                       </div>
                                     ))}
+                                  <div className="table-actions">
+                                    <button
+                                      type="button"
+                                      className="warning-button small-button"
+                                      onClick={() => handleClearCandidates(product.id)}
+                                      disabled={
+                                        clearCandidatesStateForProduct.status === "submitting" ||
+                                        candidateCount === 0
+                                      }
+                                    >
+                                      {clearCandidatesStateForProduct.status === "submitting"
+                                        ? "Clearing…"
+                                        : "Clear candidates"}
+                                    </button>
+                                  </div>
+                                  {clearCandidatesStateForProduct.error && (
+                                    <p className="error-text">
+                                      {clearCandidatesStateForProduct.error}
+                                    </p>
+                                  )}
 
                                   <h3>Draw</h3>
-                                  <button
-                                    type="button"
-                                    className="primary-button small-button"
-                                    onClick={() => handleRunDraw(product.id)}
-                                    disabled={runState.status === "submitting"}
-                                  >
-                                    {runState.status === "submitting"
-                                      ? "Running draw…"
-                                      : "Run draw"}
-                                  </button>
+                                  <div className="table-actions">
+                                    <button
+                                      type="button"
+                                      className="primary-button small-button"
+                                      onClick={() => handleRunDraw(product.id)}
+                                      disabled={runState.status === "submitting"}
+                                    >
+                                      {runState.status === "submitting"
+                                        ? "Running draw…"
+                                        : "Run draw"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="warning-button small-button"
+                                      onClick={() => handleClearDraws(product.id)}
+                                      disabled={
+                                        clearDrawsStateForProduct.status === "submitting" ||
+                                        drawState?.status !== "loaded" ||
+                                        drawState.draws.length === 0
+                                      }
+                                    >
+                                      {clearDrawsStateForProduct.status === "submitting"
+                                        ? "Clearing…"
+                                        : "Reset draws"}
+                                    </button>
+                                  </div>
                                   {runState.error && <p className="error-text">{runState.error}</p>}
+                                  {clearDrawsStateForProduct.error && (
+                                    <p className="error-text">{clearDrawsStateForProduct.error}</p>
+                                  )}
 
                                   {(!drawState || drawState.status === "loading") && (
                                     <p className="loading-text">

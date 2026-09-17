@@ -23,6 +23,7 @@ from app.models.candidate import Candidate
 from app.models.draw import Draw, DrawStatus
 from app.models.winner import Winner
 from app.repositories import candidate_repository, product_repository, reset_repository
+from app.services import product_service
 
 
 def _fk_enforcing_session():
@@ -75,3 +76,28 @@ def test_reset_ballot_succeeds_under_real_foreign_key_enforcement():
     assert counts.candidates_deleted == 1
     assert counts.draws_deleted == 1
     assert counts.winners_deleted == 1
+
+
+def test_delete_product_succeeds_under_real_foreign_key_enforcement():
+    db = _fk_enforcing_session()
+    product, _candidate, _draw = _seed_product_candidate_draw_winner(db)
+
+    counts = product_service.delete_product(db, product)
+
+    assert counts.candidates_deleted == 1
+    assert counts.draws_deleted == 1
+    assert counts.winners_deleted == 1
+
+
+def test_clear_candidates_succeeds_under_real_foreign_key_enforcement():
+    db = _fk_enforcing_session()
+    product, _candidate, _draw = _seed_product_candidate_draw_winner(db)
+
+    counts = product_service.clear_candidates(db, product.id)
+
+    assert counts.candidates_deleted == 1
+    assert counts.draws_deleted == 1
+    assert counts.winners_deleted == 1
+    # The product row itself survives -- only reset_ballot/delete_product
+    # remove it.
+    assert product_repository.get_by_id(db, product.id) is not None

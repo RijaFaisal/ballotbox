@@ -9,7 +9,14 @@ from app.database import get_db
 from app.repositories import candidate_repository, product_repository
 from app.routes.common import get_product_or_404
 from app.schemas.candidate import CandidateRead
-from app.schemas.product import ProductCreate, ProductOption, ProductRead
+from app.schemas.product import (
+    ProductCandidatesClearResult,
+    ProductCreate,
+    ProductDeleteResult,
+    ProductOption,
+    ProductRead,
+)
+from app.services import product_service
 
 # No router-level auth dependency: product creation and the candidate list
 # are admin-only, but /products/public (the entry form's dropdown) is not.
@@ -68,3 +75,35 @@ def list_candidates_for_product(
         CandidateRead.model_validate(candidate)
         for candidate in candidate_repository.list_by_product_ordered_by_id(db, product_id)
     ]
+
+
+@router.delete(
+    "/{product_id}",
+    response_model=ProductDeleteResult,
+    dependencies=[Depends(get_current_admin)],
+)
+def delete_product(product_id: int, db: Session = Depends(get_db)) -> ProductDeleteResult:
+    product = get_product_or_404(db, product_id)
+    counts = product_service.delete_product(db, product)
+    return ProductDeleteResult(
+        candidates_deleted=counts.candidates_deleted,
+        draws_deleted=counts.draws_deleted,
+        winners_deleted=counts.winners_deleted,
+    )
+
+
+@router.delete(
+    "/{product_id}/candidates",
+    response_model=ProductCandidatesClearResult,
+    dependencies=[Depends(get_current_admin)],
+)
+def clear_product_candidates(
+    product_id: int, db: Session = Depends(get_db)
+) -> ProductCandidatesClearResult:
+    get_product_or_404(db, product_id)
+    counts = product_service.clear_candidates(db, product_id)
+    return ProductCandidatesClearResult(
+        candidates_deleted=counts.candidates_deleted,
+        draws_deleted=counts.draws_deleted,
+        winners_deleted=counts.winners_deleted,
+    )

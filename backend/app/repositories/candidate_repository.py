@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models.candidate import Candidate
@@ -42,3 +42,10 @@ def count_by_product(db: Session, product_id: int) -> int:
     return db.execute(
         select(func.count()).select_from(Candidate).where(Candidate.product_id == product_id)
     ).scalar_one()
+
+
+def delete_by_product(db: Session, product_id: int) -> int:
+    """Deletes all candidates for one product; returns the count. Caller
+    commits. Any winners for this product must already be cleared first --
+    winners.candidate_id is ON DELETE RESTRICT."""
+    return db.execute(delete(Candidate).where(Candidate.product_id == product_id)).rowcount
