@@ -14,3 +14,13 @@ class ResultsRead(BaseModel):
     has_results: bool
     drawn_at: datetime | None = None
     winners: list[ResultsWinner] = []
+
+
+class DrawHistoryEntry(BaseModel):
+    id: int
+    drawn_at: datetime
+    winner_count: int
+
+
+class DrawHistoryDetail(DrawHistoryEntry):
+    winners: list[ResultsWinner]

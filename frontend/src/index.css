@@ -24,6 +24,7 @@
      accent. Green/amber/red are purely functional status colors, never
      used for branding, so the accent stays singular. */
   --color-paper: #f3efe4;
+  --color-paper-admin: #f8f5ec;
   --color-surface: #fffdf8;
   --color-ink: #17130f;
   --color-ink-muted: #5b544a;
@@ -146,6 +147,13 @@ a {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Admin dashboard only: a lighter outer page background. The header,
+   status strip, panels, and Past draws section all pin their own
+   background below so they stay visually unchanged against it. */
+.admin-dashboard-shell {
+  background: var(--color-paper-admin);
 }
 
 .site-header {
@@ -461,6 +469,7 @@ button:disabled {
   padding: var(--space-4) var(--space-5);
   border: var(--border-thick) solid var(--color-border);
   border-left-width: 8px;
+  background: var(--color-paper);
 }
 
 .status-strip--open {
@@ -571,6 +580,10 @@ button:disabled {
   margin-top: var(--space-2);
 }
 
+.past-draws-section {
+  background: var(--color-paper);
+}
+
 .table-scroll {
   overflow-x: auto;
   border: var(--border-thin) solid var(--color-border-subtle);
@@ -639,6 +652,79 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   font-weight: 700;
+}
+
+/* -- Results history accordion ----------------------------------------------------*/
+
+.history-section h2 {
+  margin-bottom: var(--space-2);
+}
+
+.history-section > .helper-text {
+  margin-bottom: var(--space-4);
+}
+
+.history-list {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.history-item {
+  border: var(--border-thin) solid var(--color-border-subtle);
+}
+
+.history-item__toggle {
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  justify-content: space-between;
+  box-shadow: none;
+  border: none;
+  padding: var(--space-3) var(--space-4);
+  min-height: 3rem;
+}
+
+.history-item__toggle:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+  transform: none;
+  box-shadow: none;
+}
+
+.history-item__toggle:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.history-item__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  text-align: left;
+}
+
+.history-item__chevron {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+}
+
+.history-item__body {
+  padding: var(--space-4);
+  border-top: var(--border-thin) solid var(--color-border-subtle);
+  background: var(--color-paper);
+}
+
+.history-item__body .winners-list {
+  margin-bottom: 0;
 }
 
 /* -- Responsive polish ------------------------------------------------------------*/

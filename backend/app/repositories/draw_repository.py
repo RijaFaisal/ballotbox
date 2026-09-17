@@ -34,6 +34,25 @@ def get_latest_completed(db: Session) -> Draw | None:
     ).scalar_one_or_none()
 
 
+def list_completed_ordered(db: Session) -> list[Draw]:
+    """All completed draws, newest first -- the same ordering as
+    get_latest_completed, so callers can derive "latest" and "everything
+    else" from one consistent list rather than two separate queries."""
+    return list(
+        db.execute(
+            select(Draw)
+            .where(Draw.status == DrawStatus.COMPLETED)
+            .order_by(Draw.drawn_at.desc(), Draw.id.desc())
+        ).scalars().all()
+    )
+
+
+def get_completed_by_id(db: Session, draw_id: int) -> Draw | None:
+    return db.execute(
+        select(Draw).where(Draw.id == draw_id, Draw.status == DrawStatus.COMPLETED)
+    ).scalar_one_or_none()
+
+
 def list_winners_for_draw(db: Session, draw_id: int) -> list[Winner]:
     return list(
         db.execute(

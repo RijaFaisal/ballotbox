@@ -158,7 +158,7 @@ export default function AdminDashboard() {
   const isLoading = entries === null || draws === null || ballotStatus === null;
 
   return (
-    <div className="site-shell">
+    <div className="site-shell admin-dashboard-shell">
       <SiteHeader
         eyebrow="Admin"
         action={
@@ -170,7 +170,6 @@ export default function AdminDashboard() {
       <main className="site-main site-main--wide">
         <div className="admin-header">
           <div>
-            <span className="eyebrow">Control panel</span>
             <h1>Admin dashboard</h1>
           </div>
         </div>
@@ -275,7 +274,7 @@ export default function AdminDashboard() {
               </section>
             </div>
 
-            <section className="section">
+            <section className="section past-draws-section">
               <h2>Past draws</h2>
               {csvError && <p className="error-text">{csvError}</p>}
               {draws.length === 0 ? (
@@ -330,7 +329,7 @@ export default function AdminDashboard() {
                 This permanently deletes every entry, draw, and winner so a new
                 event can start from zero. It does not affect admin accounts.
                 Only do this between events, after any results you need have
-                already been recorded elsewhere — it is not a way to undo or
+                already been recorded elsewhere, it is not a way to undo or
                 hide a completed draw.
               </p>
               <form onSubmit={handleReset} className="reset-form">

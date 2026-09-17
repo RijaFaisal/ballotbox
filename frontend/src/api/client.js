@@ -77,6 +77,14 @@ export function getResults() {
   return request("/results");
 }
 
+export function getResultsHistory() {
+  return request("/results/history");
+}
+
+export function getResultsHistoryDetail(drawId) {
+  return request(`/results/history/${drawId}`);
+}
+
 export function getEntryCount() {
   return request("/entries/count");
 }
