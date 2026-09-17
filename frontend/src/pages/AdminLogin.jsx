@@ -31,7 +31,6 @@ export default function AdminLogin() {
       <SiteHeader eyebrow="Admin" />
       <main className="site-main">
         <div className="panel panel--raised">
-          <span className="eyebrow">Restricted access</span>
           <h1>Admin login</h1>
           <form onSubmit={handleSubmit} noValidate>
             <div className="field">
@@ -55,7 +54,7 @@ export default function AdminLogin() {
 
             {error && <p className="error-text">{error}</p>}
 
-            <button type="submit" disabled={status === "submitting"}>
+            <button type="submit" className="primary-button" disabled={status === "submitting"}>
               {status === "submitting" ? "Signing in…" : "Sign in"}
             </button>
           </form>

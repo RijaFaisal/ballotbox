@@ -87,7 +87,10 @@ export default function EntryForm() {
       <div className="site-shell">
         <SiteHeader />
         <main className="site-main">
-          <p className="helper-text">Loading…</p>
+          <p className="loading-text">
+            <span className="spinner" aria-hidden="true" />
+            Loading…
+          </p>
         </main>
       </div>
     );
@@ -117,7 +120,6 @@ export default function EntryForm() {
         <SiteHeader />
         <main className="site-main">
           <div className="panel panel--raised">
-            <span className="eyebrow">Confirmed</span>
             <h1>You're in.</h1>
             <p>Thanks — your entry has been recorded.</p>
             {entryCount !== null && (
@@ -143,7 +145,6 @@ export default function EntryForm() {
       <SiteHeader />
       <main className="site-main">
         <div className="panel panel--raised">
-          <span className="eyebrow">Fair · Random · Auditable</span>
           <h1>Enter the ballot</h1>
           {entryCount !== null && (
             <p className="stat-chip">
@@ -170,7 +171,7 @@ export default function EntryForm() {
 
             {serverError && <p className="error-text">{serverError}</p>}
 
-            <button type="submit" disabled={status === "submitting"}>
+            <button type="submit" className="primary-button" disabled={status === "submitting"}>
               {status === "submitting" ? "Submitting…" : "Submit entry"}
             </button>
           </form>

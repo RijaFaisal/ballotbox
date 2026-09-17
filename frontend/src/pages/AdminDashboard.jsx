@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader.jsx";
 import {
   UnauthorizedError,
   clearToken,
   createDraw,
-  downloadDrawCsv,
+  downloadDrawPdf,
   getBallotStatus,
+  getDraw,
   listDraws,
   listEntries,
   resetBallot,
@@ -55,7 +56,10 @@ export default function AdminDashboard() {
   const [toggleStatus, setToggleStatus] = useState("idle");
   const [toggleError, setToggleError] = useState("");
 
-  const [csvError, setCsvError] = useState("");
+  const [exportError, setExportError] = useState("");
+
+  const [expandedDrawIds, setExpandedDrawIds] = useState(() => new Set());
+  const [drawDetails, setDrawDetails] = useState({});
 
   function loadDashboardData() {
     return Promise.all([listEntries(), listDraws(), getBallotStatus()]).then(
@@ -142,11 +146,37 @@ export default function AdminDashboard() {
       });
   }
 
-  function handleDownloadCsv(drawId) {
-    setCsvError("");
-    downloadDrawCsv(drawId).catch((err) => {
+  function toggleDrawWinners(drawId) {
+    setExpandedDrawIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(drawId)) {
+        next.delete(drawId);
+      } else {
+        next.add(drawId);
+      }
+      return next;
+    });
+    if (!drawDetails[drawId]) {
+      setDrawDetails((prev) => ({ ...prev, [drawId]: { status: "loading" } }));
+      getDraw(drawId)
+        .then((detail) => {
+          setDrawDetails((prev) => ({ ...prev, [drawId]: { status: "loaded", detail } }));
+        })
+        .catch((err) => {
+          if (err instanceof UnauthorizedError) return;
+          setDrawDetails((prev) => ({
+            ...prev,
+            [drawId]: { status: "error", error: err.message },
+          }));
+        });
+    }
+  }
+
+  function handleDownloadPdf(drawId) {
+    setExportError("");
+    downloadDrawPdf(drawId).catch((err) => {
       if (err instanceof UnauthorizedError) return;
-      setCsvError(err.message);
+      setExportError(err.message);
     });
   }
 
@@ -176,7 +206,12 @@ export default function AdminDashboard() {
 
         {loadError && <p className="error-text">{loadError}</p>}
 
-        {isLoading && !loadError && <p className="helper-text">Loading dashboard…</p>}
+        {isLoading && !loadError && (
+          <p className="loading-text">
+            <span className="spinner" aria-hidden="true" />
+            Loading dashboard…
+          </p>
+        )}
 
         {!isLoading && (
           <>
@@ -188,15 +223,21 @@ export default function AdminDashboard() {
               >
                 <div>
                   <span className="eyebrow">Ballot status</span>
-                  <p>
+                  <p className="status-line">
                     <span
-                      className={`badge ${
+                      className={`status-line__dot ${
+                        ballotStatus.is_open ? "badge--success" : "badge--danger"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className={`status-line__word ${
                         ballotStatus.is_open ? "badge--success" : "badge--danger"
                       }`}
                     >
                       {ballotStatus.is_open ? "Open" : "Closed"}
-                    </span>{" "}
-                    to new entries
+                    </span>
+                    <span className="helper-text">to new entries</span>
                   </p>
                   {toggleError && <p className="error-text">{toggleError}</p>}
                 </div>
@@ -221,7 +262,7 @@ export default function AdminDashboard() {
                   Entries <span className="mono">({entries.length})</span>
                 </h2>
                 {entries.length === 0 ? (
-                  <p className="helper-text">No entries yet.</p>
+                  <p className="empty-state">No entries yet.</p>
                 ) : (
                   <ul className="entries-list">
                     {entries.map((entry) => (
@@ -245,7 +286,11 @@ export default function AdminDashboard() {
                     />
                   </div>
                   {runDrawError && <p className="error-text">{runDrawError}</p>}
-                  <button type="submit" disabled={runDrawStatus === "submitting"}>
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={runDrawStatus === "submitting"}
+                  >
                     {runDrawStatus === "submitting" ? "Running draw…" : "Run draw"}
                   </button>
                 </form>
@@ -265,9 +310,9 @@ export default function AdminDashboard() {
                     <button
                       type="button"
                       className="secondary-button"
-                      onClick={() => handleDownloadCsv(lastDraw.id)}
+                      onClick={() => handleDownloadPdf(lastDraw.id)}
                     >
-                      Download CSV
+                      Download PDF
                     </button>
                   </div>
                 )}
@@ -276,9 +321,9 @@ export default function AdminDashboard() {
 
             <section className="section past-draws-section">
               <h2>Past draws</h2>
-              {csvError && <p className="error-text">{csvError}</p>}
+              {exportError && <p className="error-text">{exportError}</p>}
               {draws.length === 0 ? (
-                <p className="helper-text">No draws yet.</p>
+                <p className="empty-state">No draws yet.</p>
               ) : (
                 <div className="table-scroll">
                   <table className="draws-table">
@@ -289,34 +334,81 @@ export default function AdminDashboard() {
                         <th>Winners</th>
                         <th>Drawn at</th>
                         <th>Seed</th>
-                        <th>Export</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {draws.map((draw) => (
-                        <tr key={draw.id}>
-                          <td>{draw.id}</td>
-                          <td>
-                            <span className={statusBadgeClass(draw.status)}>{draw.status}</span>
-                          </td>
-                          <td>{draw.winner_count}</td>
-                          <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
-                          <td className="seed-cell">{draw.seed}</td>
-                          <td>
-                            {draw.status === "completed" ? (
-                              <button
-                                type="button"
-                                className="secondary-button small-button"
-                                onClick={() => handleDownloadCsv(draw.id)}
-                              >
-                                CSV
-                              </button>
-                            ) : (
-                              "—"
+                      {draws.map((draw) => {
+                        const isExpanded = expandedDrawIds.has(draw.id);
+                        const detailState = drawDetails[draw.id];
+                        return (
+                          <Fragment key={draw.id}>
+                            <tr>
+                              <td>{draw.id}</td>
+                              <td>
+                                <span className={statusBadgeClass(draw.status)}>
+                                  {draw.status}
+                                </span>
+                              </td>
+                              <td>{draw.winner_count}</td>
+                              <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
+                              <td className="seed-cell">{draw.seed}</td>
+                              <td>
+                                {draw.status === "completed" ? (
+                                  <div className="table-actions">
+                                    <button
+                                      type="button"
+                                      className="secondary-button small-button"
+                                      aria-expanded={isExpanded}
+                                      onClick={() => toggleDrawWinners(draw.id)}
+                                    >
+                                      {isExpanded ? "Hide" : "View"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="secondary-button small-button"
+                                      onClick={() => handleDownloadPdf(draw.id)}
+                                    >
+                                      PDF
+                                    </button>
+                                  </div>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={6} className="draws-table-expanded">
+                                  {(!detailState || detailState.status === "loading") && (
+                                    <p className="loading-text">
+                                      <span className="spinner" aria-hidden="true" />
+                                      Loading winners…
+                                    </p>
+                                  )}
+                                  {detailState?.status === "error" && (
+                                    <p className="error-text">{detailState.error}</p>
+                                  )}
+                                  {detailState?.status === "loaded" && (
+                                    <ol className="winners-list">
+                                      {detailState.detail.winners.map((winner) => (
+                                        <li key={winner.position} className="winner-row">
+                                          <span className="winner-tile">
+                                            {pad2(winner.position)}
+                                          </span>
+                                          <span className="winner-name">
+                                            {winner.entry.name}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  )}
+                                </td>
+                              </tr>
                             )}
-                          </td>
-                        </tr>
-                      ))}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

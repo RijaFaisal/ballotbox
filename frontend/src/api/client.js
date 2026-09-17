@@ -112,6 +112,10 @@ export function listDraws() {
   return adminRequest("/draws");
 }
 
+export function getDraw(drawId) {
+  return adminRequest(`/draws/${drawId}`);
+}
+
 export function createDraw(winnerCount) {
   return adminRequest("/draws", {
     method: "POST",
@@ -126,7 +130,7 @@ export function resetBallot(confirm) {
   });
 }
 
-export async function downloadDrawCsv(drawId) {
+export async function downloadDrawPdf(drawId) {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}/draws/${drawId}/export`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -138,13 +142,13 @@ export async function downloadDrawCsv(drawId) {
       window.location.assign("/admin/login");
       throw new UnauthorizedError("Session expired.");
     }
-    throw new Error("Could not download the CSV.");
+    throw new Error("Could not download the PDF.");
   }
 
   const blob = await response.blob();
   const disposition = response.headers.get("Content-Disposition") || "";
   const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match ? match[1] : `draw-${drawId}-winners.csv`;
+  const filename = match ? match[1] : `draw-${drawId}-winners.pdf`;
 
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");

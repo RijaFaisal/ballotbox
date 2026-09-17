@@ -43,13 +43,13 @@ def get_draw(draw_id: int, db: Session = Depends(get_db)) -> DrawDetailRead:
 
 
 @router.get("/{draw_id}/export")
-def export_draw_winners_csv(draw_id: int, db: Session = Depends(get_db)) -> Response:
+def export_draw_winners_pdf(draw_id: int, db: Session = Depends(get_db)) -> Response:
     draw = draw_repository.get_by_id(db, draw_id)
     if draw is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draw not found.")
-    csv_content = draw_export_service.winners_csv(db, draw)
+    pdf_bytes = draw_export_service.winners_pdf(db, draw)
     return Response(
-        content=csv_content,
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="draw-{draw_id}-winners.csv"'},
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="draw-{draw_id}-winners.pdf"'},
     )

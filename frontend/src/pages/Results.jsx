@@ -76,15 +76,19 @@ export default function Results() {
       <SiteHeader eyebrow="Results" />
       <main className="site-main">
         <div className="panel panel--raised">
-          <span className="eyebrow">Official results</span>
           <h1>Results</h1>
 
-          {status === "loading" && <p className="helper-text">Loading results…</p>}
+          {status === "loading" && (
+            <p className="loading-text">
+              <span className="spinner" aria-hidden="true" />
+              Loading results…
+            </p>
+          )}
 
           {status === "error" && <p className="error-text">{error}</p>}
 
           {status === "loaded" && !results.has_results && (
-            <p>No draw has been completed yet. Check back soon.</p>
+            <p className="empty-state">No draw has been completed yet. Check back soon.</p>
           )}
 
           {status === "loaded" && results.has_results && (
@@ -152,7 +156,10 @@ export default function Results() {
                           {isExpanded && (
                             <div id={bodyId} className="history-item__body">
                               {(!state || state.status === "loading") && (
-                                <p className="helper-text">Loading winners…</p>
+                                <p className="loading-text">
+                                  <span className="spinner" aria-hidden="true" />
+                                  Loading winners…
+                                </p>
                               )}
                               {state?.status === "error" && (
                                 <p className="error-text">{state.error}</p>

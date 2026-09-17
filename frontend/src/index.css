@@ -21,8 +21,11 @@
 
   /* -- Color tokens -------------------------------------------------------
      Paper + ink evoke an actual ballot sheet; rust is the one confident
-     accent. Green/amber/red are purely functional status colors, never
-     used for branding, so the accent stays singular. */
+     accent, reserved for the single primary action on a screen (see
+     .primary-button). Everything else — default buttons, links, winner
+     tiles, highlights — stays neutral so the accent keeps its meaning.
+     Green/amber/red are purely functional status colors, never used for
+     branding, so the accent stays singular. */
   --color-paper: #f3efe4;
   --color-paper-admin: #f8f5ec;
   --color-surface: #fffdf8;
@@ -30,13 +33,13 @@
   --color-ink-muted: #5b544a;
   --color-border: #17130f;
   --color-border-subtle: #d8d0bd;
+  --color-slate: #5c4c42;
 
   --color-accent: #c1440e;
   --color-accent-ink: #fff8f0;
-  --color-accent-soft: #f4ded1;
+  --color-highlight: #eae5d6;
 
   --color-success: #1f6d3f;
-  --color-success-bg: #e5f0e6;
   --color-danger: #a92318;
   --color-danger-bg: #fbe8e4;
   --color-warning: #8a5a00;
@@ -58,7 +61,9 @@
   --border-thin: 1px;
   --border-thick: 2px;
   --radius: 0px;
-  --shadow-offset: 5px;
+  --shadow-sm: 0 1px 3px rgba(23, 19, 15, 0.1);
+  --shadow-md: 0 4px 10px rgba(23, 19, 15, 0.12);
+  --shadow-lg: 0 8px 20px rgba(23, 19, 15, 0.14);
   --content-max: 40rem;
   --content-max-wide: 58rem;
 
@@ -111,7 +116,7 @@ h3 {
 
 h1 {
   font-size: var(--font-size-3xl);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 h2 {
@@ -129,7 +134,7 @@ p {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-ink);
 }
 
 :focus-visible {
@@ -222,7 +227,7 @@ a {
 }
 
 .panel--raised {
-  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--color-border);
+  box-shadow: var(--shadow-md);
 }
 
 @media (min-width: 640px) {
@@ -303,6 +308,41 @@ a {
   margin: 0;
 }
 
+.loading-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border-subtle);
+  border-top-color: var(--color-ink-muted);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  padding: var(--space-4);
+  border: var(--border-thin) dashed var(--color-border-subtle);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  margin: 0;
+}
+
 /* -- Buttons ------------------------------------------------------------------*/
 
 button {
@@ -314,34 +354,32 @@ button {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: var(--font-size-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   padding: var(--space-3) var(--space-5);
   min-height: 3rem;
   border: var(--border-thick) solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-accent);
+  background: var(--color-ink);
   color: var(--color-accent-ink);
   cursor: pointer;
-  box-shadow: 4px 4px 0 var(--color-border);
+  box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast),
     opacity var(--transition-fast);
 }
 
 button:hover:not(:disabled) {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--color-border);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 button:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--color-border);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-  box-shadow: 4px 4px 0 var(--color-border);
+  box-shadow: none;
   transform: none;
 }
 
@@ -351,6 +389,10 @@ button:disabled {
   gap: var(--space-3);
 }
 
+.primary-button {
+  background: var(--color-accent);
+}
+
 .secondary-button {
   width: auto;
   background: var(--color-surface);
@@ -358,8 +400,13 @@ button:disabled {
 }
 
 .warning-button {
-  background: var(--color-warning);
-  color: var(--color-accent-ink);
+  background: transparent;
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.warning-button:hover:not(:disabled) {
+  background: var(--color-warning-bg);
 }
 
 .danger-button {
@@ -377,15 +424,6 @@ button:disabled {
   min-height: 2.25rem;
   padding: var(--space-2) var(--space-3);
   font-size: var(--font-size-xs);
-  box-shadow: 3px 3px 0 var(--color-border);
-}
-
-.small-button:hover:not(:disabled) {
-  box-shadow: 4px 4px 0 var(--color-border);
-}
-
-.small-button:active:not(:disabled) {
-  box-shadow: 1px 1px 0 var(--color-border);
 }
 
 /* -- Links ------------------------------------------------------------------*/
@@ -408,54 +446,71 @@ button:disabled {
 /* -- Badges / status pills ----------------------------------------------------*/
 
 .badge {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-thin) solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* No font overrides -- inherit size/family/weight from wherever the
+     badge is placed, so it reads as part of the same sentence/row
+     instead of a mismatched, differently-sized fragment. */
+}
+
+.badge::before {
+  content: "";
+  width: 0.4em;
+  height: 0.4em;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .badge--success {
   color: var(--color-success);
-  background: var(--color-success-bg);
 }
 
 .badge--danger {
   color: var(--color-danger);
-  background: var(--color-danger-bg);
 }
 
 .badge--warning {
   color: var(--color-warning);
-  background: var(--color-warning-bg);
 }
 
 .badge--neutral {
   color: var(--color-ink-muted);
-  background: var(--color-border-subtle);
+}
+
+/* -- Status line (ballot status: dot + word + muted context text) -----------*/
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.status-line__dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+.status-line__word {
+  font-weight: 700;
 }
 
 /* -- Stat / count chip --------------------------------------------------------*/
 
 .stat-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  color: var(--color-ink-muted);
-  border: var(--border-thin) solid var(--color-border-subtle);
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-5);
-}
-
-.stat-chip strong {
-  color: var(--color-ink);
-  font-size: var(--font-size-lg);
+  display: block;
+  font-family: var(--font-body);
   font-weight: 700;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink);
+  margin-bottom: var(--space-5);
 }
 
 /* -- Ballot status strip -------------------------------------------------------*/
@@ -516,9 +571,9 @@ button:disabled {
   min-width: 2.75rem;
   text-align: center;
   padding: var(--space-2) var(--space-1);
-  background: var(--color-accent);
+  background: var(--color-slate);
   color: var(--color-accent-ink);
-  border: var(--border-thin) solid var(--color-border);
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
@@ -569,7 +624,7 @@ button:disabled {
   margin-top: var(--space-5);
   padding: var(--space-4);
   border: var(--border-thick) solid var(--color-border);
-  background: var(--color-accent-soft);
+  background: var(--color-highlight);
 }
 
 .last-draw-result h3 {
@@ -581,12 +636,12 @@ button:disabled {
 }
 
 .past-draws-section {
-  background: var(--color-paper);
+  background: var(--color-paper-admin);
 }
 
 .table-scroll {
   overflow-x: auto;
-  border: var(--border-thin) solid var(--color-border-subtle);
+  border: var(--border-thick) solid var(--color-border);
 }
 
 .draws-table {
@@ -623,6 +678,21 @@ button:disabled {
   word-break: break-all;
   max-width: 16rem;
   color: var(--color-ink-muted);
+}
+
+.table-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.draws-table-expanded {
+  background: var(--color-paper-admin);
+  border-bottom: var(--border-thin) solid var(--color-border-subtle);
+  font-family: var(--font-body);
+}
+
+.draws-table-expanded .winners-list {
+  margin: 0;
 }
 
 /* -- Danger zone ----------------------------------------------------------------*/
@@ -692,7 +762,7 @@ button:disabled {
 }
 
 .history-item__toggle:hover:not(:disabled) {
-  background: var(--color-accent-soft);
+  background: var(--color-highlight);
   transform: none;
   box-shadow: none;
 }
