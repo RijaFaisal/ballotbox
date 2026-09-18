@@ -32,10 +32,6 @@ export default function AdminDashboard() {
         <section className="section">
           <div className="stats-row">
             <div className="stat-tile">
-              <span className="eyebrow">Products</span>
-              <p className="stat-tile__value">{summary.product_count}</p>
-            </div>
-            <div className="stat-tile">
               <span className="eyebrow">Open to entries</span>
               <p className="stat-tile__value">{summary.open_product_count}</p>
             </div>

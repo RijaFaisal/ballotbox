@@ -76,7 +76,7 @@ export default function AdminProducts() {
   const isLoading = products === null;
 
   return (
-    <AdminLayout heading="Products" sidebar={<ProductsSidebar />}>
+    <AdminLayout sidebar={<ProductsSidebar />}>
       {loadError && <p className="error-text">{loadError}</p>}
 
       {isLoading && !loadError && (

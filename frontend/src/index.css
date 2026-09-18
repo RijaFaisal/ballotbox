@@ -275,6 +275,7 @@ a:hover {
   margin: 0 auto;
   padding: var(--space-3) var(--space-4);
   display: flex;
+  justify-content: center;
   gap: var(--space-5);
 }
 
