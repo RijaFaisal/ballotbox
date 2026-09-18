@@ -2,10 +2,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
 from app.repositories import candidate_repository, draw_repository, product_repository
+from app.schemas.product import ProductBulkUploadResult, ProductBulkUploadSkip
+from app.services.csv_import import parse_csv_rows
+
+
+@dataclass(frozen=True)
+class DashboardSummary:
+    product_count: int
+    open_product_count: int
+    candidate_count: int
 
 
 @dataclass(frozen=True)
@@ -26,6 +36,18 @@ class CandidatesClearCounts:
     candidates_deleted: int
     draws_deleted: int
     winners_deleted: int
+
+
+def get_dashboard_summary(db: Session) -> DashboardSummary:
+    return DashboardSummary(
+        product_count=product_repository.count_all(db),
+        open_product_count=product_repository.count_open(db),
+        candidate_count=candidate_repository.count_all(db),
+    )
+
+
+def set_open(db: Session, product: Product, is_open: bool) -> Product:
+    return product_repository.set_open(db, product, is_open)
 
 
 def delete_product(db: Session, product: Product) -> ProductDeleteCounts:
@@ -69,3 +91,52 @@ def clear_candidates(db: Session, product_id: int) -> CandidatesClearCounts:
         draws_deleted=draws_deleted,
         winners_deleted=winners_deleted,
     )
+
+
+def bulk_create_products(db: Session, file_bytes: bytes) -> ProductBulkUploadResult:
+    """Creates one product per CSV row (single "name" column).
+
+    Reuses the same case-insensitive uniqueness rule as single product
+    creation. A row is skipped (never fails the whole upload) when its
+    name is blank, a duplicate of an earlier row in this same file, or
+    already exists in the database -- each with its own reported reason.
+    """
+    rows = parse_csv_rows(file_bytes, required_columns={"name"})
+
+    created_count = 0
+    skipped: list[ProductBulkUploadSkip] = []
+    seen_names_lower: set[str] = set()
+
+    for row_number, row in enumerate(rows, start=1):
+        name = row.get("name", "")
+
+        if not name:
+            skipped.append(ProductBulkUploadSkip(row=row_number, name=name, reason="blank name"))
+            continue
+
+        name_lower = name.lower()
+        if name_lower in seen_names_lower:
+            skipped.append(
+                ProductBulkUploadSkip(row=row_number, name=name, reason="duplicate in file")
+            )
+            continue
+
+        if product_repository.get_by_name(db, name) is not None:
+            skipped.append(
+                ProductBulkUploadSkip(row=row_number, name=name, reason="already exists")
+            )
+            continue
+
+        try:
+            product_repository.create(db, name=name)
+        except IntegrityError:
+            db.rollback()
+            skipped.append(
+                ProductBulkUploadSkip(row=row_number, name=name, reason="already exists")
+            )
+            continue
+
+        created_count += 1
+        seen_names_lower.add(name_lower)
+
+    return ProductBulkUploadResult(created_count=created_count, skipped=skipped)

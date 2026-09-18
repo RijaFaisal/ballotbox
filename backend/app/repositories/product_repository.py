@@ -32,11 +32,33 @@ def list_all_ordered_by_created_at(db: Session) -> list[Product]:
     )
 
 
-def list_all_ordered_by_name(db: Session) -> list[Product]:
-    """Alphabetical -- friendlier than creation order for a customer-facing
-    dropdown, where "newest first" has no obvious value."""
-    return list(db.execute(select(Product).order_by(func.lower(Product.name))).scalars().all())
+def list_open_ordered_by_name(db: Session) -> list[Product]:
+    """Alphabetical, open products only -- this is the customer-facing
+    dropdown, where "newest first" has no obvious value and a closed
+    product shouldn't be offered at all."""
+    return list(
+        db.execute(
+            select(Product).where(Product.is_open.is_(True)).order_by(func.lower(Product.name))
+        ).scalars().all()
+    )
 
 
 def delete(db: Session, product: Product) -> None:
     db.delete(product)
+
+
+def set_open(db: Session, product: Product, is_open: bool) -> Product:
+    product.is_open = is_open
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+def count_all(db: Session) -> int:
+    return db.execute(select(func.count()).select_from(Product)).scalar_one()
+
+
+def count_open(db: Session) -> int:
+    return db.execute(
+        select(func.count()).select_from(Product).where(Product.is_open.is_(True))
+    ).scalar_one()

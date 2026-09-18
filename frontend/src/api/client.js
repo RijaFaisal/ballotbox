@@ -27,9 +27,12 @@ export function clearToken() {
 }
 
 async function request(path, { isAdminRequest, ...options } = {}) {
+  // A FormData body (file uploads) must not get a manual Content-Type --
+  // the browser sets one itself, including the multipart boundary.
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: { ...(isFormData ? {} : { "Content-Type": "application/json" }), ...options.headers },
   });
   const data = await response.json().catch(() => null);
   if (!response.ok) {
@@ -55,22 +58,58 @@ function adminRequest(path, options = {}) {
   });
 }
 
+// Shared by every "download this admin-only file" action (PDF, CSV): fetch
+// with the admin token attached, honor the server's suggested filename, and
+// trigger a browser download without navigating away from the SPA.
+async function downloadAdminFile(path, fallbackFilename) {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      window.location.assign("/admin/login");
+      throw new UnauthorizedError("Session expired.");
+    }
+    throw new Error("Could not download the file.");
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : fallbackFilename;
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export function login(payload) {
   return request("/auth/login", { method: "POST", body: JSON.stringify(payload) });
 }
 
-export function getBallotStatus() {
-  return request("/ballot/status");
-}
-export function toggleBallotStatus() {
-  return adminRequest("/ballot/toggle", { method: "POST" });
+export function getDashboardSummary() {
+  return adminRequest("/products/summary");
 }
 
 export function listProducts() {
   return adminRequest("/products");
 }
+export function getProduct(productId) {
+  return adminRequest(`/products/${productId}`);
+}
 export function createProduct(name) {
   return adminRequest("/products", { method: "POST", body: JSON.stringify({ name }) });
+}
+export function setProductOpen(productId, isOpen) {
+  return adminRequest(`/products/${productId}/open`, {
+    method: "POST",
+    body: JSON.stringify({ is_open: isOpen }),
+  });
 }
 export function listCandidatesForProduct(productId) {
   return adminRequest(`/products/${productId}/candidates`);
@@ -80,6 +119,17 @@ export function deleteProduct(productId) {
 }
 export function clearProductCandidates(productId) {
   return adminRequest(`/products/${productId}/candidates`, { method: "DELETE" });
+}
+export function bulkUploadProducts(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return adminRequest("/products/bulk-upload", { method: "POST", body: formData });
+}
+export function downloadCandidatesCsv(productId) {
+  return downloadAdminFile(
+    `/products/${productId}/candidates/export`,
+    `candidates-${productId}.csv`
+  );
 }
 
 export function getPublicProducts() {
@@ -98,32 +148,21 @@ export function listDrawsForProduct(productId) {
 export function clearProductDraws(productId) {
   return adminRequest(`/products/${productId}/draws`, { method: "DELETE" });
 }
+export function downloadDrawPdf(productId, drawId) {
+  return downloadAdminFile(
+    `/products/${productId}/draws/${drawId}/export`,
+    `draw-${drawId}.pdf`
+  );
+}
 
-export async function downloadDrawPdf(productId, drawId) {
-  const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/products/${productId}/draws/${drawId}/export`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!response.ok) {
-    if (response.status === 401) {
-      clearToken();
-      window.location.assign("/admin/login");
-      throw new UnauthorizedError("Session expired.");
-    }
-    throw new Error("Could not download the PDF.");
-  }
-  const blob = await response.blob();
-  const disposition = response.headers.get("Content-Disposition") || "";
-  const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match ? match[1] : `draw-${drawId}.pdf`;
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
+export function listAdmins() {
+  return adminRequest("/admin/users");
+}
+export function createAdminAccount(payload) {
+  return adminRequest("/admin/users", { method: "POST", body: JSON.stringify(payload) });
+}
+export function deleteAdminAccount(adminId) {
+  return adminRequest(`/admin/users/${adminId}`, { method: "DELETE" });
 }
 
 export function resetBallot(confirm) {

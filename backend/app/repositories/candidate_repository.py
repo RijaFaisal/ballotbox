@@ -44,6 +44,10 @@ def count_by_product(db: Session, product_id: int) -> int:
     ).scalar_one()
 
 
+def count_all(db: Session) -> int:
+    return db.execute(select(func.count()).select_from(Candidate)).scalar_one()
+
+
 def delete_by_product(db: Session, product_id: int) -> int:
     """Deletes all candidates for one product; returns the count. Caller
     commits. Any winners for this product must already be cleared first --

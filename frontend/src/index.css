@@ -263,6 +263,40 @@ a:hover {
   margin-left: auto;
 }
 
+/* -- Admin section nav (Dashboard / Products / Admin controls) -----------------*/
+
+.admin-nav {
+  background: var(--color-paper-admin);
+  border-bottom: var(--border-thin) solid var(--color-border-strong);
+}
+
+.admin-nav__inner {
+  max-width: var(--content-max-wide);
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  gap: var(--space-5);
+}
+
+.admin-nav__link {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  padding-bottom: var(--space-1);
+  border-bottom: 2px solid transparent;
+}
+
+.admin-nav__link:hover {
+  color: var(--color-brand-green);
+}
+
+.admin-nav__link--active {
+  color: var(--color-brand-green);
+  border-bottom-color: var(--color-brand-green);
+}
+
 .admin-access-button {
   position: fixed;
   bottom: var(--space-3);
@@ -290,6 +324,12 @@ a:hover {
 .admin-access-button:focus-visible {
   opacity: 1;
   color: var(--color-ink);
+}
+
+.admin-access-button svg {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
 }
 
 .site-main {
@@ -327,6 +367,19 @@ a:hover {
 
 .section > h2 {
   margin-bottom: var(--space-4);
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.section-header-row h2 {
+  margin-bottom: 0;
 }
 
 .eyebrow {
@@ -428,7 +481,8 @@ a:hover {
 
 /* -- Buttons ------------------------------------------------------------------*/
 
-button {
+button,
+.button-like {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -451,13 +505,30 @@ button {
     opacity var(--transition-fast);
 }
 
-button:hover:not(:disabled) {
+/* .button-like is an <a>/<Link> styled to match -- e.g. "Manage", which
+   navigates to a product's own page rather than performing an action. */
+.button-like {
+  text-decoration: none;
+}
+
+/* Icons inside buttons scale with the button's own font-size (so they
+   shrink automatically on .small-button) and never stretch tall buttons. */
+button svg,
+.button-like svg {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+button:hover:not(:disabled),
+.button-like:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
   background: var(--color-highlight);
 }
 
-button:active:not(:disabled) {
+button:active:not(:disabled),
+.button-like:active {
   transform: translateY(0);
   box-shadow: var(--shadow-sm);
 }
@@ -695,14 +766,48 @@ button:disabled {
 
 .admin-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  text-align: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-6);
 }
 
 .admin-header h1 {
   margin: 0;
+}
+
+.admin-header__back {
+  display: inline-block;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* -- Dashboard overview stat tiles ---------------------------------------------*/
+
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.stat-tile {
+  flex: 1 1 10rem;
+  background: var(--color-surface);
+  border: var(--border-thin) solid var(--color-border-strong);
+  padding: var(--card-padding);
+}
+
+.stat-tile .eyebrow {
+  margin-bottom: var(--space-2);
+}
+
+.stat-tile__value {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--heading-size-h1);
+  color: var(--color-heading);
 }
 
 .entries-list {
@@ -737,6 +842,93 @@ button:disabled {
 
 .tinted-section {
   background: var(--color-paper-admin);
+}
+
+/* -- Admin shell body: full-height sidebar rail + main content -----------------*/
+
+.admin-shell-body {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* -- Products section: full-bleed left rail -------------------------------------*/
+
+.products-sidebar {
+  flex: 0 0 15rem;
+  background: var(--color-surface);
+  border-right: var(--border-thick) solid var(--color-border-strong);
+}
+
+.products-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.products-sidebar__list + .products-sidebar__list {
+  border-top: var(--border-thick) solid var(--color-border-strong);
+}
+
+.products-sidebar__link {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-ink);
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  border-bottom: var(--border-thin) solid var(--color-border-subtle);
+}
+
+.products-sidebar__link:hover {
+  background: var(--color-highlight);
+}
+
+.products-sidebar__link--active {
+  background: var(--color-brand-green);
+  color: #ffffff;
+}
+
+.products-sidebar__link--accent {
+  color: var(--color-brand-green);
+  font-weight: 700;
+}
+
+.products-sidebar__search {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-thin) solid var(--color-border-subtle);
+}
+
+.products-sidebar__search input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.25rem;
+  border: var(--border-thin) solid var(--color-border-subtle);
+  background: var(--color-paper-admin);
+  color: var(--color-ink);
+}
+
+.products-sidebar__empty {
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 720px) {
+  .admin-shell-body {
+    flex-direction: column;
+  }
+
+  .products-sidebar {
+    flex: 0 0 auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: var(--border-thick) solid var(--color-border-strong);
+  }
 }
 
 .table-scroll {

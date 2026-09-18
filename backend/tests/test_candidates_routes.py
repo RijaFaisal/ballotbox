@@ -1,4 +1,4 @@
-from app.repositories import ballot_settings_repository, candidate_repository, product_repository
+from app.repositories import candidate_repository, product_repository
 
 
 def test_list_products_public_requires_no_auth(client, db_session):
@@ -74,9 +74,9 @@ def test_duplicate_candidate_is_a_friendly_409(client, db_session):
     assert "already entered" in response.json()["detail"].lower()
 
 
-def test_submit_candidate_rejected_when_ballot_closed(client, db_session):
+def test_submit_candidate_rejected_when_product_is_closed(client, db_session):
     product = product_repository.create(db_session, name="Grand Prize")
-    ballot_settings_repository.set_open(db_session, False)
+    product_repository.set_open(db_session, product, False)
 
     response = client.post(
         "/candidates", json={"product_id": product.id, "name": "Alice", "email": "a@example.com"}
@@ -84,6 +84,18 @@ def test_submit_candidate_rejected_when_ballot_closed(client, db_session):
 
     assert response.status_code == 403
     assert "closed" in response.json()["detail"].lower()
+
+
+def test_closed_product_is_excluded_from_public_list_but_open_ones_are_not(client, db_session):
+    open_product = product_repository.create(db_session, name="Open One")
+    closed_product = product_repository.create(db_session, name="Closed One")
+    product_repository.set_open(db_session, closed_product, False)
+
+    response = client.get("/products/public")
+
+    assert response.status_code == 200
+    names = {p["name"] for p in response.json()}
+    assert names == {"Open One"}
 
 
 def test_same_person_can_enter_two_different_products(client, db_session):

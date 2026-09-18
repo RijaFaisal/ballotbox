@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import SiteHeader from "../components/SiteHeader.jsx";
-import { getBallotStatus, getPublicProducts, submitCandidate } from "../api/client.js";
+import { CheckIcon, ResetIcon } from "../components/icons.jsx";
+import { getPublicProducts, submitCandidate } from "../api/client.js";
 
 const CNIC_PATTERN = /^\d{5}-?\d{7}-?\d{1}$/;
 
 export default function EntryForm() {
-  const [pageState, setPageState] = useState("loading"); // loading | closed | ready
+  const [pageState, setPageState] = useState("loading"); // loading | ready
   const [products, setProducts] = useState([]);
   const [loadError, setLoadError] = useState("");
 
@@ -19,11 +20,11 @@ export default function EntryForm() {
   const [confirmation, setConfirmation] = useState(null);
 
   useEffect(() => {
-    Promise.all([getBallotStatus(), getPublicProducts()])
-      .then(([ballotStatus, productList]) => {
+    getPublicProducts()
+      .then((productList) => {
         setProducts(productList);
         if (productList.length > 0) setProductId(String(productList[0].id));
-        setPageState(ballotStatus.is_open ? "ready" : "closed");
+        setPageState("ready");
       })
       .catch((err) => {
         setLoadError(err.message);
@@ -102,21 +103,6 @@ export default function EntryForm() {
     );
   }
 
-  if (pageState === "closed") {
-    return (
-      <div className="site-shell">
-        <SiteHeader />
-        <main className="site-main">
-          <div className="panel panel--raised">
-            <span className="eyebrow">Ballot status</span>
-            <h1>Ballot closed</h1>
-            <p>This ballot isn't accepting new entries right now. Check back later.</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   if (status === "success" && confirmation) {
     return (
       <div className="site-shell">
@@ -129,6 +115,7 @@ export default function EntryForm() {
               <strong>{confirmation.product_name}</strong>.
             </p>
             <button type="button" onClick={handleEnterAnother}>
+              <ResetIcon />
               Submit another entry
             </button>
           </div>
@@ -194,6 +181,7 @@ export default function EntryForm() {
               {serverError && <p className="error-text">{serverError}</p>}
 
               <button type="submit" className="primary-button" disabled={status === "submitting"}>
+                <CheckIcon />
                 {status === "submitting" ? "Submitting…" : "Submit entry"}
               </button>
             </form>

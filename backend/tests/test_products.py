@@ -22,6 +22,24 @@ def test_create_and_list_products(client, auth_headers):
     assert [p["name"] for p in list_response.json()] == ["Grand Prize"]
 
 
+def test_get_product_requires_admin(client, db_session):
+    product = product_repository.create(db_session, name="Grand Prize")
+    response = client.get(f"/products/{product.id}")
+    assert response.status_code == 401
+
+
+def test_get_product_returns_it(client, db_session, auth_headers):
+    product = product_repository.create(db_session, name="Grand Prize")
+    response = client.get(f"/products/{product.id}", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["name"] == "Grand Prize"
+
+
+def test_get_unknown_product_is_404(client, auth_headers):
+    response = client.get("/products/999", headers=auth_headers)
+    assert response.status_code == 404
+
+
 def test_duplicate_product_name_is_rejected_case_insensitively(client, auth_headers):
     client.post("/products", json={"name": "Grand Prize"}, headers=auth_headers)
 

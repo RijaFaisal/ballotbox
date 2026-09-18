@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader.jsx";
+import { LogInIcon } from "../components/icons.jsx";
 import { login, setToken } from "../api/client.js";
 
 export default function AdminLogin() {
@@ -55,6 +56,7 @@ export default function AdminLogin() {
             {error && <p className="error-text">{error}</p>}
 
             <button type="submit" className="primary-button" disabled={status === "submitting"}>
+              <LogInIcon />
               {status === "submitting" ? "Signing in…" : "Sign in"}
             </button>
           </form>

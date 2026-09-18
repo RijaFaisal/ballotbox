@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { getToken } from "../api/client.js";
+import { ArrowLeftIcon, SettingsIcon } from "./icons.jsx";
 
 export default function SiteHeader({ eyebrow, action }) {
   const { pathname } = useLocation();
@@ -18,12 +19,12 @@ export default function SiteHeader({ eyebrow, action }) {
       {inAdmin
         ? !isLoggedIn && (
             <Link to="/" className="admin-access-button" title="Back to site">
-              <span aria-hidden="true">←</span> Back to site
+              <ArrowLeftIcon /> Back to site
             </Link>
           )
         : (
             <Link to="/admin" className="admin-access-button" title="Admin">
-              <span aria-hidden="true">⚙</span> Admin
+              <SettingsIcon /> Admin
             </Link>
           )}
     </header>

@@ -20,6 +20,7 @@ class ProductCreate(BaseModel):
 class ProductRead(BaseModel):
     id: int
     name: str
+    is_open: bool
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -35,6 +36,10 @@ class ProductOption(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProductOpenUpdate(BaseModel):
+    is_open: bool
+
+
 class ProductDeleteResult(BaseModel):
     candidates_deleted: int
     draws_deleted: int
@@ -45,3 +50,20 @@ class ProductCandidatesClearResult(BaseModel):
     candidates_deleted: int
     draws_deleted: int
     winners_deleted: int
+
+
+class ProductBulkUploadSkip(BaseModel):
+    row: int
+    name: str
+    reason: str
+
+
+class ProductBulkUploadResult(BaseModel):
+    created_count: int
+    skipped: list[ProductBulkUploadSkip]
+
+
+class DashboardSummary(BaseModel):
+    product_count: int
+    open_product_count: int
+    candidate_count: int
