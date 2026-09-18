@@ -26,7 +26,7 @@
      exact hierarchy: h1 32px, h2 27.2px, h3 20.8px, then h4-h6 continuing
      down at roughly the same ~1.176x ratio per step. */
   --heading-size-h1: 2rem; /* 32px */
-  --heading-size-h2: 1.7rem; /* 27.2px */
+  --heading-size-h2: 1.25rem; /* 20px */
   --heading-size-h3: 1.3rem; /* 20.8px */
   --heading-size-h4: 1.1rem; /* ~17.7px */
   --heading-size-h5: 0.94rem; /* ~15px */

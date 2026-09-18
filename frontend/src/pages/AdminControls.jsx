@@ -6,15 +6,19 @@ import {
   createAdminAccount,
   deleteAdminAccount,
   listAdmins,
+  listLoginEvents,
   resetBallot,
 } from "../api/client.js";
-import { pluralize } from "../utils/format.js";
+import { formatDateTime, pluralize } from "../utils/format.js";
 
 const RESET_CONFIRM_PHRASE = "RESET";
 
 export default function AdminControls() {
   const [admins, setAdmins] = useState(null);
   const [adminsError, setAdminsError] = useState("");
+
+  const [loginEvents, setLoginEvents] = useState(null);
+  const [loginEventsError, setLoginEventsError] = useState("");
 
   const [newAdminUsername, setNewAdminUsername] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
@@ -37,8 +41,18 @@ export default function AdminControls() {
       });
   }
 
+  function loadLoginEvents() {
+    listLoginEvents()
+      .then(setLoginEvents)
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setLoginEventsError(err.message);
+      });
+  }
+
   useEffect(() => {
     loadAdmins();
+    loadLoginEvents();
   }, []);
 
   function handleCreateAdmin(event) {
@@ -164,6 +178,48 @@ export default function AdminControls() {
                 </tbody>
               </table>
             </div>
+          </section>
+
+          <section className="section panel">
+            <h2>Login history</h2>
+            {loginEventsError && <p className="error-text">{loginEventsError}</p>}
+            {loginEvents === null && !loginEventsError && (
+              <p className="loading-text">
+                <span className="spinner" aria-hidden="true" />
+                Loading login history…
+              </p>
+            )}
+            {loginEvents !== null && loginEvents.length === 0 && (
+              <p className="empty-state">No login attempts recorded yet.</p>
+            )}
+            {loginEvents !== null && loginEvents.length > 0 && (
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Result</th>
+                      <th>IP address</th>
+                      <th>When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loginEvents.map((event) => (
+                      <tr key={event.id}>
+                        <td>{event.username}</td>
+                        <td>
+                          <span className={event.success ? "badge badge--success" : "badge badge--danger"}>
+                            {event.success ? "Success" : "Failed"}
+                          </span>
+                        </td>
+                        <td>{event.ip_address ?? "—"}</td>
+                        <td>{formatDateTime(event.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
           <section className="section panel">

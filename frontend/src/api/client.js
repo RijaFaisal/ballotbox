@@ -170,6 +170,9 @@ export function downloadDrawPdf(productId, drawId) {
 export function listAdmins() {
   return adminRequest("/admin/users");
 }
+export function listLoginEvents() {
+  return adminRequest("/admin/users/login-events");
+}
 export function createAdminAccount(payload) {
   return adminRequest("/admin/users", { method: "POST", body: JSON.stringify(payload) });
 }

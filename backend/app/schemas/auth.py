@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -25,3 +27,14 @@ class AdminAccountCreate(BaseModel):
 
 class AdminDeleteResult(BaseModel):
     deleted: bool = True
+
+
+class LoginEventRead(BaseModel):
+    id: int
+    admin_id: int | None
+    username: str
+    success: bool
+    ip_address: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

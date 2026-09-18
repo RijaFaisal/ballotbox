@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_admin
 from app.database import get_db
 from app.models.admin import Admin
-from app.repositories import admin_repository
+from app.repositories import admin_repository, login_event_repository
 from app.routes.common import get_admin_or_404
-from app.schemas.auth import AdminAccountCreate, AdminDeleteResult, AdminRead
+from app.schemas.auth import AdminAccountCreate, AdminDeleteResult, AdminRead, LoginEventRead
 from app.services.admin_account_service import (
     CannotDeleteLastAdminError,
     CannotDeleteSelfError,
@@ -27,6 +27,14 @@ def list_admins(db: Session = Depends(get_db)) -> list[AdminRead]:
     return [
         AdminRead.model_validate(admin)
         for admin in admin_repository.list_all_ordered_by_username(db)
+    ]
+
+
+@router.get("/login-events", response_model=list[LoginEventRead])
+def list_login_events(db: Session = Depends(get_db)) -> list[LoginEventRead]:
+    return [
+        LoginEventRead.model_validate(event)
+        for event in login_event_repository.list_recent(db)
     ]
 
 
