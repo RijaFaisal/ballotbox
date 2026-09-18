@@ -9,7 +9,14 @@ function handleLogout() {
   window.location.assign("/admin/login");
 }
 
-export default function AdminLayout({ heading, backTo, backLabel, sidebar, children }) {
+export default function AdminLayout({
+  heading,
+  headingExtra,
+  backTo,
+  backLabel,
+  sidebar,
+  children,
+}) {
   return (
     <div className="site-shell admin-dashboard-shell">
       <SiteHeader
@@ -32,7 +39,12 @@ export default function AdminLayout({ heading, backTo, backLabel, sidebar, child
                   ← {backLabel ?? "Back"}
                 </Link>
               )}
-              {heading && <h1>{heading}</h1>}
+              {heading && (
+                <div className="admin-header__row">
+                  <h1>{heading}</h1>
+                  {headingExtra}
+                </div>
+              )}
             </div>
           )}
           {children}

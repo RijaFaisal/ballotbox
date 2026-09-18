@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 
 from sqlalchemy.exc import IntegrityError
@@ -48,6 +49,10 @@ def get_dashboard_summary(db: Session) -> DashboardSummary:
 
 def set_open(db: Session, product: Product, is_open: bool) -> Product:
     return product_repository.set_open(db, product, is_open)
+
+
+def set_closes_at(db: Session, product: Product, closes_at: dt.datetime | None) -> Product:
+    return product_repository.set_closes_at(db, product, closes_at)
 
 
 def delete_product(db: Session, product: Product) -> ProductDeleteCounts:

@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class ProductCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+    closes_at: datetime | None = None
 
     @field_validator("name")
     @classmethod
@@ -21,9 +22,17 @@ class ProductRead(BaseModel):
     id: int
     name: str
     is_open: bool
+    closes_at: datetime | None
+    # Computed from is_open + closes_at (see Product.effectively_open) --
+    # the actual state entrants see, distinct from the raw is_open switch.
+    effectively_open: bool
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductClosesAtUpdate(BaseModel):
+    closes_at: datetime | None
 
 
 class ProductOption(BaseModel):

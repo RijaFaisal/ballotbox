@@ -16,6 +16,7 @@ from app.schemas.product import (
     DashboardSummary,
     ProductBulkUploadResult,
     ProductCandidatesClearResult,
+    ProductClosesAtUpdate,
     ProductCreate,
     ProductDeleteResult,
     ProductOpenUpdate,
@@ -73,7 +74,7 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)) -> Pro
             detail="A product with this name already exists.",
         )
     try:
-        product = product_repository.create(db, name=payload.name)
+        product = product_repository.create(db, name=payload.name, closes_at=payload.closes_at)
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(
@@ -126,6 +127,19 @@ def set_product_open(
 ) -> ProductRead:
     product = get_product_or_404(db, product_id)
     updated = product_service.set_open(db, product, payload.is_open)
+    return ProductRead.model_validate(updated)
+
+
+@router.post(
+    "/{product_id}/closes-at",
+    response_model=ProductRead,
+    dependencies=[Depends(get_current_admin)],
+)
+def set_product_closes_at(
+    product_id: int, payload: ProductClosesAtUpdate, db: Session = Depends(get_db)
+) -> ProductRead:
+    product = get_product_or_404(db, product_id)
+    updated = product_service.set_closes_at(db, product, payload.closes_at)
     return ProductRead.model_validate(updated)
 
 

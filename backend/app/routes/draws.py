@@ -10,27 +10,27 @@ from app.core.deps import get_current_admin
 from app.database import get_db
 from app.repositories import draw_repository
 from app.routes.common import get_product_or_404
-from app.schemas.draw import DrawDetailRead, DrawsClearResult
+from app.schemas.draw import DrawCreate, DrawDetailRead, DrawsClearResult
 from app.services import draw_export_service, product_service
 from app.services.draw_service import NotEnoughEntriesError, run_draw
 
 # Each product's draw is independent: winning one product never excludes a
-# candidate from another, and every draw here always selects exactly one
-# winner from that product's own candidates.
+# candidate from another. winner_count defaults to 1 but a caller can ask
+# for more (e.g. 1st/2nd/3rd prize), capped only by the eligible candidates.
 router = APIRouter(
     prefix="/products/{product_id}/draws",
     tags=["draws"],
     dependencies=[Depends(get_current_admin)],
 )
 
-_WINNER_COUNT = 1
-
 
 @router.post("", response_model=DrawDetailRead, status_code=status.HTTP_201_CREATED)
-def create_draw(product_id: int, db: Session = Depends(get_db)) -> DrawDetailRead:
+def create_draw(
+    product_id: int, payload: DrawCreate = DrawCreate(), db: Session = Depends(get_db)
+) -> DrawDetailRead:
     get_product_or_404(db, product_id)
     try:
-        draw = run_draw(db, product_id=product_id, winner_count=_WINNER_COUNT)
+        draw = run_draw(db, product_id=product_id, winner_count=payload.winner_count)
     except NotEnoughEntriesError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)

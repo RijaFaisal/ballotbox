@@ -10,6 +10,7 @@ export default function AdminProductNew() {
   const navigate = useNavigate();
 
   const [newProductName, setNewProductName] = useState("");
+  const [newProductClosesAt, setNewProductClosesAt] = useState("");
   const [createStatus, setCreateStatus] = useState("idle");
   const [createError, setCreateError] = useState("");
 
@@ -30,7 +31,9 @@ export default function AdminProductNew() {
     setCreateStatus("submitting");
     setCreateError("");
 
-    createProduct(name)
+    const closesAt = newProductClosesAt ? new Date(newProductClosesAt).toISOString() : null;
+
+    createProduct(name, closesAt)
       .then((product) => {
         navigate(`/admin/products/${product.id}`);
       })
@@ -80,6 +83,18 @@ export default function AdminProductNew() {
               onChange={(e) => setNewProductName(e.target.value)}
               placeholder="e.g. Grand Prize"
             />
+          </div>
+          <div className="field">
+            <label htmlFor="productClosesAt">Closes at (optional)</label>
+            <input
+              id="productClosesAt"
+              type="datetime-local"
+              value={newProductClosesAt}
+              onChange={(e) => setNewProductClosesAt(e.target.value)}
+            />
+            <p className="helper-text">
+              Entries close automatically at this time. Leave blank to close only by hand.
+            </p>
           </div>
           {createError && <p className="error-text">{createError}</p>}
           <button type="submit" className="primary-button" disabled={createStatus === "submitting"}>

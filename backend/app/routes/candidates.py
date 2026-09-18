@@ -15,7 +15,7 @@ router = APIRouter(prefix="/candidates", tags=["candidates"])
 def create_candidate(payload: CandidateCreate, db: Session = Depends(get_db)) -> CandidateSubmitResult:
     product = get_product_or_404(db, payload.product_id)
 
-    if not product.is_open:
+    if not product.effectively_open:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This product is currently closed. New entries are not being accepted.",

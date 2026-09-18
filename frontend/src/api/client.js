@@ -102,13 +102,22 @@ export function listProducts() {
 export function getProduct(productId) {
   return adminRequest(`/products/${productId}`);
 }
-export function createProduct(name) {
-  return adminRequest("/products", { method: "POST", body: JSON.stringify({ name }) });
+export function createProduct(name, closesAt) {
+  return adminRequest("/products", {
+    method: "POST",
+    body: JSON.stringify({ name, closes_at: closesAt || null }),
+  });
 }
 export function setProductOpen(productId, isOpen) {
   return adminRequest(`/products/${productId}/open`, {
     method: "POST",
     body: JSON.stringify({ is_open: isOpen }),
+  });
+}
+export function setProductClosesAt(productId, closesAt) {
+  return adminRequest(`/products/${productId}/closes-at`, {
+    method: "POST",
+    body: JSON.stringify({ closes_at: closesAt || null }),
   });
 }
 export function listCandidatesForProduct(productId) {
@@ -139,8 +148,11 @@ export function submitCandidate(payload) {
   return request("/candidates", { method: "POST", body: JSON.stringify(payload) });
 }
 
-export function createDraw(productId) {
-  return adminRequest(`/products/${productId}/draws`, { method: "POST" });
+export function createDraw(productId, winnerCount) {
+  return adminRequest(`/products/${productId}/draws`, {
+    method: "POST",
+    body: JSON.stringify({ winner_count: winnerCount }),
+  });
 }
 export function listDrawsForProduct(productId) {
   return adminRequest(`/products/${productId}/draws`);

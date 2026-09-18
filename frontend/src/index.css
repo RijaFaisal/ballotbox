@@ -33,41 +33,40 @@
   --heading-size-h6: 0.8rem; /* ~12.8px */
 
   /* -- Color tokens -------------------------------------------------------
-     Brand palette (Naya Nazimabad / BusinessPlus reference): institutional
-     green + teal + amber on white/black, high contrast, no warm undertones.
-     Structure and spacing are unchanged from the original tactile-brutalist
-     system -- only the hues feeding these same tokens have moved. */
-  /* Page bg vs. card bg is the primary separation mechanism (#f5f5f5 vs.
+     Corporate/professional palette: a single restrained brand hue (deep
+     emerald) used sparingly for interactive elements, cool neutral grays
+     carrying almost all of the structure, and low-saturation semantic
+     colors for status. Headings are neutral ink, not brand-colored --
+     the brand hue is reserved for the logo, links, active states, and
+     primary actions so it still reads as intentional. */
+  /* Page bg vs. card bg is the primary separation mechanism (paper vs.
      white) -- borders are a subtle secondary reinforcement, never a heavy
      black outline. */
-  --color-paper: #f5f5f5;
-  --color-paper-admin: #f5f5f5;
+  --color-paper: #f6f7f9;
+  --color-paper-admin: #f6f7f9;
   --color-surface: #ffffff;
-  --color-ink: #1a1a1a;
-  --color-ink-muted: #595959;
-  --color-border: #e0e0e0;
-  --color-border-subtle: #e0e0e0;
+  --color-ink: #1b2430;
+  --color-ink-muted: #5c6772;
+  --color-border: #e2e5ea;
+  --color-border-subtle: #e2e5ea;
 
-  --color-heading: #008047;
-  --color-brand-green: #008047;
-  --color-brand-green-hover: #00693c;
-  --color-teal: #005346;
-  --color-teal-hover: #00695a;
-  --color-amber: #faaf32;
-  --color-link: #119447;
-  --color-link-hover: #0e7d3c;
+  --color-heading: var(--color-ink);
+  --color-brand-green: #1f6f43;
+  --color-brand-green-hover: #17532f;
+  --color-link: #1f6f43;
+  --color-link-hover: #17532f;
 
   --color-accent: var(--color-brand-green);
   --color-accent-hover: var(--color-brand-green-hover);
   --color-accent-ink: #ffffff;
-  --color-highlight: #e6f3ec;
+  --color-highlight: #eaf3ee;
 
-  --color-success: #008047;
-  --color-success-bg: #e6f4ec;
-  --color-danger: #b3261e;
-  --color-danger-bg: #fdecea;
-  --color-warning: #b9791f;
-  --color-warning-bg: #fdf1de;
+  --color-success: #1f6f43;
+  --color-success-bg: #e7f3ec;
+  --color-danger: #ae2b21;
+  --color-danger-bg: #fbeceb;
+  --color-warning: #96590f;
+  --color-warning-bg: #faf0dd;
 
   --color-focus: #1454b8;
 
@@ -90,7 +89,7 @@
   /* -- Structure ----------------------------------------------------------*/
   --border-thin: 1px;
   --border-thick: 1px;
-  --color-border-strong: #000000;
+  --color-border-strong: #c9d0d8;
   --radius: 0px;
   --radius-pill: 999px;
   --card-padding: 1.5rem; /* 24px baseline, consistent across cards/sections */
@@ -220,7 +219,7 @@ a:hover {
   top: 0;
   z-index: 20;
   background: var(--color-brand-green);
-  border-bottom: var(--border-thick) solid var(--color-teal);
+  border-bottom: var(--border-thick) solid var(--color-brand-green-hover);
 }
 
 .site-header__inner {
@@ -254,7 +253,8 @@ a:hover {
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-amber);
+  color: #ffffff;
+  opacity: 0.85;
   border-left: var(--border-thin) solid rgba(255, 255, 255, 0.35);
   padding-left: var(--space-3);
 }
@@ -561,14 +561,14 @@ button:disabled {
 
 .secondary-button {
   width: auto;
-  background: var(--color-teal);
-  border-color: var(--color-teal);
-  color: var(--color-amber);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
 }
 
 .secondary-button:hover:not(:disabled) {
-  background: var(--color-teal-hover);
-  border-color: var(--color-teal-hover);
+  background: var(--color-paper);
+  border-color: var(--color-ink-muted);
 }
 
 .warning-button {
@@ -594,6 +594,48 @@ button:disabled {
 
 .danger-button:disabled,
 .warning-button:disabled {
+  opacity: 0.4;
+}
+
+/* -- Products table row actions: filled but muted, distinct from the
+   brand-green primary CTA and the red danger button. -------------------*/
+
+.manage-button {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #ffffff;
+}
+
+.manage-button:hover:not(:disabled) {
+  background: #0f151d;
+  border-color: #0f151d;
+  color: #ffffff;
+}
+
+.toggle-open-button {
+  background: var(--color-brand-green);
+  border-color: var(--color-brand-green);
+  color: #ffffff;
+}
+
+.toggle-open-button:hover:not(:disabled) {
+  background: var(--color-brand-green-hover);
+  border-color: var(--color-brand-green-hover);
+}
+
+.toggle-close-button {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: #ffffff;
+}
+
+.toggle-close-button:hover:not(:disabled) {
+  background: #764708;
+  border-color: #764708;
+}
+
+.toggle-open-button:disabled,
+.toggle-close-button:disabled {
   opacity: 0.4;
 }
 
@@ -662,6 +704,43 @@ button:disabled {
 .status-line__word.badge--neutral {
   color: var(--color-ink-muted);
   background: #ececec;
+}
+
+/* -- Product status pill (open/closed) ---------------------------------------
+   Outlined dot + label, not a filled tint or a fully-rounded pill -- this is
+   the one, reusable treatment for product open/closed state everywhere it
+   appears (products table, product detail header, etc). */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  border: var(--border-thin) solid currentColor;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-pill__dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.status-pill--open {
+  color: var(--color-success);
+}
+
+.status-pill--closed {
+  color: var(--color-danger);
 }
 
 /* -- Status line (ballot status: dot + word + muted context text) -----------*/
@@ -768,14 +847,22 @@ button:disabled {
 .admin-header {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   gap: var(--space-2);
   margin-bottom: var(--space-6);
 }
 
+.admin-header__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .admin-header h1 {
   margin: 0;
+  font-size: 1.5rem;
 }
 
 .admin-header__back {
@@ -973,6 +1060,15 @@ button:disabled {
   word-break: break-all;
   max-width: 16rem;
   color: var(--color-ink-muted);
+}
+
+.winners-inline-list {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.winners-inline-list li {
+  padding: 0.1rem 0;
 }
 
 .table-actions {

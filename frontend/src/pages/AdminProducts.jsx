@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout.jsx";
 import ProductsSidebar from "../components/ProductsSidebar.jsx";
+import ProductStatusPill from "../components/ProductStatusPill.jsx";
 import { LockIcon, PlusIcon, TrashIcon, UnlockIcon } from "../components/icons.jsx";
 import {
   UnauthorizedError,
@@ -9,7 +10,7 @@ import {
   listProducts,
   setProductOpen,
 } from "../api/client.js";
-import { formatDateTime } from "../utils/format.js";
+import { formatDateTime, productStatusLabel } from "../utils/format.js";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState(null);
@@ -106,6 +107,7 @@ export default function AdminProducts() {
                   <tr>
                     <th>Name</th>
                     <th>Status</th>
+                    <th>Closes</th>
                     <th>Created</th>
                     <th>Actions</th>
                   </tr>
@@ -119,20 +121,18 @@ export default function AdminProducts() {
                       <tr key={product.id}>
                         <td>{product.name}</td>
                         <td>
-                          <span
-                            className={
-                              product.is_open ? "badge badge--success" : "badge badge--danger"
-                            }
-                          >
-                            {product.is_open ? "Open" : "Closed"}
-                          </span>
+                          <ProductStatusPill
+                            isOpen={product.effectively_open}
+                            label={productStatusLabel(product)}
+                          />
                         </td>
+                        <td>{product.closes_at ? formatDateTime(product.closes_at) : "—"}</td>
                         <td>{formatDateTime(product.created_at)}</td>
                         <td>
                           <div className="table-actions">
                             <Link
                               to={`/admin/products/${product.id}`}
-                              className="button-like secondary-button small-button"
+                              className="button-like manage-button small-button"
                             >
                               Manage
                             </Link>
@@ -140,8 +140,8 @@ export default function AdminProducts() {
                               type="button"
                               className={
                                 product.is_open
-                                  ? "warning-button small-button"
-                                  : "secondary-button small-button"
+                                  ? "toggle-close-button small-button"
+                                  : "toggle-open-button small-button"
                               }
                               onClick={() => handleToggleProductOpen(product)}
                               disabled={openState.status === "submitting"}

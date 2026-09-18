@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout.jsx";
 import ProductsSidebar from "../components/ProductsSidebar.jsx";
+import ProductStatusPill from "../components/ProductStatusPill.jsx";
 import { DownloadIcon, PlayIcon, ResetIcon } from "../components/icons.jsx";
 import {
   UnauthorizedError,
@@ -13,8 +14,18 @@ import {
   getProduct,
   listCandidatesForProduct,
   listDrawsForProduct,
+  setProductClosesAt,
 } from "../api/client.js";
-import { formatDateTime, statusBadgeClass } from "../utils/format.js";
+import { formatDateTime, productStatusLabel, statusBadgeClass } from "../utils/format.js";
+
+function toDatetimeLocalValue(isoString) {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
+}
 
 const CANDIDATES_PAGE_SIZE = 10;
 
@@ -43,9 +54,13 @@ export default function AdminProductDetail() {
   const [exportCsvError, setExportCsvError] = useState("");
   const [clearCandidatesState, setClearCandidatesState] = useState({ status: "idle" });
 
+  const [winnerCount, setWinnerCount] = useState("1");
   const [runDrawState, setRunDrawState] = useState({ status: "idle" });
   const [clearDrawsState, setClearDrawsState] = useState({ status: "idle" });
   const [exportErrorByDraw, setExportErrorByDraw] = useState({});
+
+  const [closesAtInput, setClosesAtInput] = useState("");
+  const [scheduleState, setScheduleState] = useState({ status: "idle" });
 
   function loadCandidates() {
     setCandidateState({ status: "loading" });
@@ -69,7 +84,10 @@ export default function AdminProductDetail() {
 
   useEffect(() => {
     getProduct(productId)
-      .then(setProduct)
+      .then((loaded) => {
+        setProduct(loaded);
+        setClosesAtInput(toDatetimeLocalValue(loaded.closes_at));
+      })
       .catch((err) => {
         if (err instanceof UnauthorizedError) return;
         setLoadError(err.message);
@@ -80,9 +98,10 @@ export default function AdminProductDetail() {
   }, [productId]);
 
   function handleRunDraw() {
+    const count = Math.max(1, Number(winnerCount) || 1);
     setRunDrawState({ status: "submitting" });
 
-    createDraw(productId)
+    createDraw(productId, count)
       .then(() => {
         setRunDrawState({ status: "idle" });
         loadDraws();
@@ -91,6 +110,38 @@ export default function AdminProductDetail() {
       .catch((err) => {
         if (err instanceof UnauthorizedError) return;
         setRunDrawState({ status: "idle", error: err.message });
+      });
+  }
+
+  function handleSaveSchedule(event) {
+    event.preventDefault();
+    setScheduleState({ status: "submitting" });
+
+    const closesAt = closesAtInput ? new Date(closesAtInput).toISOString() : null;
+
+    setProductClosesAt(productId, closesAt)
+      .then((updated) => {
+        setProduct(updated);
+        setScheduleState({ status: "idle" });
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setScheduleState({ status: "idle", error: err.message });
+      });
+  }
+
+  function handleClearSchedule() {
+    setScheduleState({ status: "submitting" });
+
+    setProductClosesAt(productId, null)
+      .then((updated) => {
+        setProduct(updated);
+        setClosesAtInput("");
+        setScheduleState({ status: "idle" });
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) return;
+        setScheduleState({ status: "idle", error: err.message });
       });
   }
 
@@ -168,7 +219,18 @@ export default function AdminProductDetail() {
   );
 
   return (
-    <AdminLayout heading={product?.name ?? "Product"} sidebar={<ProductsSidebar />}>
+    <AdminLayout
+      heading={product?.name ?? "Product"}
+      headingExtra={
+        product && (
+          <ProductStatusPill
+            isOpen={product.effectively_open}
+            label={productStatusLabel(product)}
+          />
+        )
+      }
+      sidebar={<ProductsSidebar />}
+    >
       {loadError && <p className="error-text">{loadError}</p>}
       {isLoading && !loadError && (
         <p className="loading-text">
@@ -179,12 +241,43 @@ export default function AdminProductDetail() {
 
       {product && (
         <>
-          <section className="section">
-            <span
-              className={product.is_open ? "badge badge--success" : "badge badge--danger"}
-            >
-              {product.is_open ? "Open" : "Closed"}
-            </span>
+          <section className="section panel">
+            <h2>Schedule</h2>
+            <p className="helper-text">
+              Entries close automatically at this time, regardless of the open/closed toggle
+              above. Leave blank to close only by hand.
+            </p>
+            <form onSubmit={handleSaveSchedule} className="run-draw-form">
+              <div className="field">
+                <label htmlFor="closesAt">Closes at</label>
+                <input
+                  id="closesAt"
+                  type="datetime-local"
+                  value={closesAtInput}
+                  onChange={(e) => setClosesAtInput(e.target.value)}
+                />
+              </div>
+              {scheduleState.error && <p className="error-text">{scheduleState.error}</p>}
+              <div className="table-actions">
+                <button
+                  type="submit"
+                  className="primary-button small-button"
+                  disabled={scheduleState.status === "submitting"}
+                >
+                  {scheduleState.status === "submitting" ? "Saving…" : "Save schedule"}
+                </button>
+                {product.closes_at && (
+                  <button
+                    type="button"
+                    className="secondary-button small-button"
+                    onClick={handleClearSchedule}
+                    disabled={scheduleState.status === "submitting"}
+                  >
+                    Clear schedule
+                  </button>
+                )}
+              </div>
+            </form>
           </section>
 
           <section className="section panel">
@@ -299,6 +392,16 @@ export default function AdminProductDetail() {
 
           <section className="section panel">
             <h2>Draw</h2>
+            <div className="field run-draw-form">
+              <label htmlFor="winnerCount">Number of winners</label>
+              <input
+                id="winnerCount"
+                type="number"
+                min="1"
+                value={winnerCount}
+                onChange={(e) => setWinnerCount(e.target.value)}
+              />
+            </div>
             <div className="table-actions">
               <button
                 type="button"
@@ -343,7 +446,7 @@ export default function AdminProductDetail() {
                       <tr>
                         <th>ID</th>
                         <th>Status</th>
-                        <th>Winner</th>
+                        <th>Winners</th>
                         <th>Drawn at</th>
                         <th>Seed</th>
                         <th>Actions</th>
@@ -356,7 +459,19 @@ export default function AdminProductDetail() {
                           <td>
                             <span className={statusBadgeClass(draw.status)}>{draw.status}</span>
                           </td>
-                          <td>{draw.winners[0]?.candidate.name ?? "—"}</td>
+                          <td>
+                            {draw.winners.length === 0 ? (
+                              "—"
+                            ) : draw.winners.length === 1 ? (
+                              draw.winners[0].candidate.name
+                            ) : (
+                              <ol className="winners-inline-list">
+                                {draw.winners.map((winner) => (
+                                  <li key={winner.position}>{winner.candidate.name}</li>
+                                ))}
+                              </ol>
+                            )}
+                          </td>
                           <td>{draw.drawn_at ? formatDateTime(draw.drawn_at) : "—"}</td>
                           <td className="seed-cell">{draw.seed}</td>
                           <td>
